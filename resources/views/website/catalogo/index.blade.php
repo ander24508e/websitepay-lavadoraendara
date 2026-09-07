@@ -41,24 +41,6 @@
                 <h3 class="catalogo-modal-title" id="catalogoDetailTitle"></h3>
                 <p class="catalogo-modal-price" id="catalogoDetailPrice"></p>
                 <p class="catalogo-modal-desc" id="catalogoDetailDescription"></p>
-                <dl class="catalogo-product-summary" id="catalogoDetailProductSummary" hidden>
-                    <div>
-                        <dt>Linea de negocio</dt>
-                        <dd id="detailProductBusinessLine"></dd>
-                    </div>
-                    <div>
-                        <dt>Categoria</dt>
-                        <dd id="detailProductCategory"></dd>
-                    </div>
-                    <div>
-                        <dt>Producto</dt>
-                        <dd id="detailProductName"></dd>
-                    </div>
-                    <div>
-                        <dt>Descripcion</dt>
-                        <dd id="detailProductDescription"></dd>
-                    </div>
-                </dl>
                 <div class="catalogo-detail-vehicle" id="catalogoDetailVehicle" hidden>
                     <label for="detailVehicleSelect">Busca tu vehiculo</label>
                     <select id="detailVehicleSelect" class="select2 website-vehicle-select"
@@ -91,7 +73,6 @@
                         </label>
                     </div>
                     <div class="catalogo-product-purchase-summary">
-                        <p class="catalogo-modal-price" id="detailVariantPrice">$0.00</p>
                         <p class="catalogo-product-stock" id="detailVariantStock"></p>
                     </div>
                     <button type="button" class="btn-reservar-main" id="detailAddToCartBtn">Agregar al carrito</button>
@@ -172,17 +153,11 @@
             const detailServiceAddBtn = document.getElementById('detailServiceAddBtn');
             const detailServiceReserveBtn = document.getElementById('detailServiceReserveBtn');
             const detailProductControls = document.getElementById('catalogoDetailProductControls');
-            const detailProductSummary = document.getElementById('catalogoDetailProductSummary');
-            const detailProductBusinessLine = document.getElementById('detailProductBusinessLine');
-            const detailProductCategory = document.getElementById('detailProductCategory');
-            const detailProductName = document.getElementById('detailProductName');
-            const detailProductDescription = document.getElementById('detailProductDescription');
             const detailVariantSelect = document.getElementById('detailVariantSelect');
             const detailQtyInput = document.getElementById('detailQtyInput');
             const detailQtyValue = document.getElementById('detailQtyValue');
             const detailQtyMinus = document.getElementById('detailQtyMinus');
             const detailQtyPlus = document.getElementById('detailQtyPlus');
-            const detailVariantPrice = document.getElementById('detailVariantPrice');
             const detailVariantStock = document.getElementById('detailVariantStock');
             const detailAddToCartBtn = document.getElementById('detailAddToCartBtn');
             const reserveOverlay = document.getElementById('catalogoReserveOverlay');
@@ -463,12 +438,12 @@
             }
 
             function updateDetailVariantPrice(resetQuantity = true) {
-                if (!currentDetailItem || !detailVariantSelect || !detailVariantPrice) return;
+                if (!currentDetailItem || !detailVariantSelect || !detailPrice) return;
                 const selected = getSelectedDetailVariant();
                 const price = selected ? selected.price : Number(currentDetailItem.precio || 0);
                 const maxStock = selected ? Math.max(0, Number(selected.stock || 0)) : getSelectedVariantStock();
 
-                detailVariantPrice.textContent = `Precio: ${formatCatalogPrice(price)}`;
+                detailPrice.textContent = `Precio: ${formatCatalogPrice(price)}`;
                 if (detailVariantStock) {
                     detailVariantStock.textContent = maxStock > 0
                         ? `Stock disponible: ${maxStock}`
@@ -795,17 +770,8 @@
                     `${currentDetailItem.tipo_label || 'Catalogo'} - ${currentDetailItem.categoria || ''}`;
                 detailTitle.textContent = currentDetailItem.nombre || '';
                 detailPrice.textContent = isProductDetail ? '' : `Desde $${Number(currentDetailItem.precio || 0).toFixed(2)}`;
-                detailDescription.textContent = currentDetailItem.descripcion || (isProductDetail ? '' : 'Sin descripcion adicional.');
-                detailDescription.hidden = isProductDetail && !Boolean(currentDetailItem.descripcion);
-                if (detailProductSummary) {
-                    detailProductSummary.hidden = !isProductDetail;
-                }
-                if (isProductDetail) {
-                    if (detailProductBusinessLine) detailProductBusinessLine.textContent = currentDetailItem.tipo_label || 'Catalogo';
-                    if (detailProductCategory) detailProductCategory.textContent = currentDetailItem.categoria || 'Sin categoria';
-                    if (detailProductName) detailProductName.textContent = currentDetailItem.nombre || '';
-                    if (detailProductDescription) detailProductDescription.textContent = currentDetailItem.descripcion || 'Sin descripcion adicional.';
-                }
+                detailDescription.textContent = currentDetailItem.descripcion || 'Sin descripcion adicional.';
+                detailDescription.hidden = false;
                 renderServiceVehicleOptions(currentDetailItem);
 
                 if (detailServiceActions) {
@@ -846,7 +812,6 @@
                     updateDetailVariantPrice();
                 } else if (detailProductControls) {
                     detailVariantSelect.innerHTML = '';
-                    if (detailVariantPrice) detailVariantPrice.textContent = '';
                     if (detailVariantStock) {
                         detailVariantStock.textContent = '';
                         detailVariantStock.classList.remove('is-empty');

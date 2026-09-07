@@ -262,11 +262,6 @@
     position: relative;
 }
 
-#catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal {
-    width: min(900px, 95vw);
-    grid-template-columns: minmax(230px, 38%) minmax(0, 1fr);
-}
-
 #catalogo .catalogo-modal-close {
     position: absolute;
     top: 0.55rem;
@@ -303,19 +298,6 @@
     object-fit: contain;
     border-radius: 10px;
     background: rgba(255, 255, 255, 0.04);
-}
-
-#catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-media {
-    min-height: 300px;
-    background:
-        linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.02)),
-        #10151f;
-}
-
-#catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-image,
-#catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-placeholder {
-    min-height: 260px;
-    max-height: 330px;
 }
 
 #catalogo .catalogo-modal-placeholder {
@@ -364,48 +346,6 @@
     margin: 0;
     color: rgba(255, 255, 255, 0.92);
     line-height: 1.55;
-}
-
-#catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-desc {
-    display: none;
-}
-
-#catalogo .catalogo-product-summary {
-    display: grid;
-    gap: 0.62rem;
-    margin: 0.85rem 0 0;
-}
-
-#catalogo .catalogo-product-summary[hidden] {
-    display: none !important;
-}
-
-#catalogo .catalogo-product-summary div {
-    display: grid;
-    grid-template-columns: minmax(108px, 0.36fr) minmax(0, 1fr);
-    gap: 0.65rem;
-    align-items: start;
-    padding-bottom: 0.62rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.09);
-}
-
-#catalogo .catalogo-product-summary dt {
-    color: rgba(255, 255, 255, 0.58);
-    font-size: 0.72rem;
-    font-weight: 800;
-    letter-spacing: 0.06em;
-    line-height: 1.35;
-    text-transform: uppercase;
-}
-
-#catalogo .catalogo-product-summary dd {
-    margin: 0;
-    min-width: 0;
-    color: #ffffff;
-    font-size: 0.92rem;
-    font-weight: 650;
-    line-height: 1.4;
-    overflow-wrap: anywhere;
 }
 
 #catalogo .catalogo-detail-product-controls {
@@ -819,24 +759,11 @@
         overflow: visible;
     }
 
-    #catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal {
-        width: min(100%, 430px);
-        grid-template-columns: 1fr;
-    }
-
     #catalogo .catalogo-modal-media,
     #catalogo .catalogo-modal-image,
     #catalogo .catalogo-modal-placeholder {
         min-height: 210px;
         height: 210px;
-    }
-
-    #catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-media,
-    #catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-image,
-    #catalogo .catalogo-modal-overlay.is-product-detail .catalogo-modal-placeholder {
-        min-height: 190px;
-        height: 190px;
-        max-height: 190px;
     }
 
     #catalogo .catalogo-modal-body {
@@ -845,11 +772,6 @@
 
     #catalogo .catalogo-detail-grid {
         grid-template-columns: 1fr;
-    }
-
-    #catalogo .catalogo-product-summary div {
-        grid-template-columns: 1fr;
-        gap: 0.22rem;
     }
 
     #catalogo .website-product-variant-dropdown,
