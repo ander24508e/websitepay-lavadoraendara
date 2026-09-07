@@ -41,6 +41,24 @@
                 <h3 class="catalogo-modal-title" id="catalogoDetailTitle"></h3>
                 <p class="catalogo-modal-price" id="catalogoDetailPrice"></p>
                 <p class="catalogo-modal-desc" id="catalogoDetailDescription"></p>
+                <dl class="catalogo-product-summary" id="catalogoDetailProductSummary" hidden>
+                    <div>
+                        <dt>Linea de negocio</dt>
+                        <dd id="detailProductBusinessLine"></dd>
+                    </div>
+                    <div>
+                        <dt>Categoria</dt>
+                        <dd id="detailProductCategory"></dd>
+                    </div>
+                    <div>
+                        <dt>Producto</dt>
+                        <dd id="detailProductName"></dd>
+                    </div>
+                    <div>
+                        <dt>Descripcion</dt>
+                        <dd id="detailProductDescription"></dd>
+                    </div>
+                </dl>
                 <div class="catalogo-detail-vehicle" id="catalogoDetailVehicle" hidden>
                     <label for="detailVehicleSelect">Busca tu vehiculo</label>
                     <select id="detailVehicleSelect" class="select2 website-vehicle-select"
@@ -56,9 +74,10 @@
                     <button type="button" class="btn-reservar-main" id="detailServiceReserveBtn">Reservar</button>
                 </div>
                 <div class="catalogo-detail-product-controls" id="catalogoDetailProductControls" hidden>
-                    <div class="catalogo-detail-grid">
-                        <label>Presentaci&oacute;n
-                            <select id="detailVariantSelect"></select>
+                    <div class="catalogo-detail-grid catalogo-product-detail-grid">
+                        <label class="catalogo-product-variant-field">Presentaci&oacute;n
+                            <select id="detailVariantSelect" class="select2 website-product-variant-select"
+                                data-placeholder="Busca presentacion, precio o stock"></select>
                         </label>
                         <label>Cantidad
                             <div class="catalog-stock-counter catalog-stock-counter-modal" id="detailQtyCounter">
@@ -71,7 +90,10 @@
                             <input type="hidden" id="detailQtyInput" value="1">
                         </label>
                     </div>
-                    <p class="catalogo-modal-price" id="detailVariantPrice">$0.00</p>
+                    <div class="catalogo-product-purchase-summary">
+                        <p class="catalogo-modal-price" id="detailVariantPrice">$0.00</p>
+                        <p class="catalogo-product-stock" id="detailVariantStock"></p>
+                    </div>
                     <button type="button" class="btn-reservar-main" id="detailAddToCartBtn">Agregar al carrito</button>
                 </div>
             </div>
@@ -150,12 +172,18 @@
             const detailServiceAddBtn = document.getElementById('detailServiceAddBtn');
             const detailServiceReserveBtn = document.getElementById('detailServiceReserveBtn');
             const detailProductControls = document.getElementById('catalogoDetailProductControls');
+            const detailProductSummary = document.getElementById('catalogoDetailProductSummary');
+            const detailProductBusinessLine = document.getElementById('detailProductBusinessLine');
+            const detailProductCategory = document.getElementById('detailProductCategory');
+            const detailProductName = document.getElementById('detailProductName');
+            const detailProductDescription = document.getElementById('detailProductDescription');
             const detailVariantSelect = document.getElementById('detailVariantSelect');
             const detailQtyInput = document.getElementById('detailQtyInput');
             const detailQtyValue = document.getElementById('detailQtyValue');
             const detailQtyMinus = document.getElementById('detailQtyMinus');
             const detailQtyPlus = document.getElementById('detailQtyPlus');
             const detailVariantPrice = document.getElementById('detailVariantPrice');
+            const detailVariantStock = document.getElementById('detailVariantStock');
             const detailAddToCartBtn = document.getElementById('detailAddToCartBtn');
             const reserveOverlay = document.getElementById('catalogoReserveOverlay');
             const reserveClose = document.getElementById('catalogoReserveClose');
@@ -422,20 +450,38 @@
                 return variant.name || 'Presentacion';
             }
 
-            function updateDetailVariantPrice() {
-                if (!currentDetailItem || !detailVariantSelect || !detailVariantPrice) return;
+            function buildVariantSearchLabel(variant) {
+                const stock = Math.max(0, Number(variant.stock || 0));
+                return `${buildVariantLabel(variant)} - ${formatCatalogPrice(variant.price)} - Stock ${stock}`;
+            }
+
+            function getSelectedDetailVariant() {
+                if (!currentDetailItem) return null;
                 const variants = getVariants(currentDetailItem);
-                const selectedId = Number(detailVariantSelect.value || 0);
-                const selected = variants.find((v) => v.id === selectedId) || variants[0];
+                const selectedId = Number(detailVariantSelect?.value || 0);
+                return variants.find((v) => v.id === selectedId) || variants[0] || null;
+            }
+
+            function updateDetailVariantPrice(resetQuantity = true) {
+                if (!currentDetailItem || !detailVariantSelect || !detailVariantPrice) return;
+                const selected = getSelectedDetailVariant();
                 const price = selected ? selected.price : Number(currentDetailItem.precio || 0);
-                const maxStock = getSelectedVariantStock();
-                detailVariantPrice.textContent = `Precio: $${price.toFixed(2)}`;
-                setDetailQuantity(1, maxStock);
+                const maxStock = selected ? Math.max(0, Number(selected.stock || 0)) : getSelectedVariantStock();
+
+                detailVariantPrice.textContent = `Precio: ${formatCatalogPrice(price)}`;
+                if (detailVariantStock) {
+                    detailVariantStock.textContent = maxStock > 0
+                        ? `Stock disponible: ${maxStock}`
+                        : 'Stock disponible: Agotado';
+                    detailVariantStock.classList.toggle('is-empty', maxStock <= 0);
+                }
+                setDetailQuantity(resetQuantity ? 1 : Number(detailQtyInput?.value || 1), maxStock);
                 if (detailAddToCartBtn) {
                     detailAddToCartBtn.disabled = Boolean(currentDetailItem.inventariable) && maxStock <= 0;
                     detailAddToCartBtn.textContent = detailAddToCartBtn.disabled ? 'Agotado' : 'Agregar al carrito';
                 }
             }
+
             function setDetailQuantity(value, max = null) {
                 const maxStock = max === null ? getSelectedVariantStock() : Number(max || 0);
                 const safeMax = Math.max(1, maxStock || 1);
@@ -484,6 +530,10 @@
                 return Boolean(window.jQuery?.fn?.select2 && detailVehicleSelect);
             }
 
+            function canUseVariantSelect2() {
+                return Boolean(window.jQuery?.fn?.select2 && detailVariantSelect);
+            }
+
             function destroyDetailVehicleSelect2() {
                 if (!canUseSelect2()) return;
 
@@ -516,6 +566,42 @@
                 $select
                     .off('change.websiteVehicleSelect')
                     .on('change.websiteVehicleSelect', updateServiceVehiclePrice);
+            }
+
+            function destroyDetailVariantSelect2() {
+                if (!canUseVariantSelect2()) return;
+
+                const $select = window.jQuery(detailVariantSelect);
+                $select.off('change.websiteProductVariantSelect');
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+            }
+
+            function initDetailVariantSelect2() {
+                if (!canUseVariantSelect2() || !detailOverlay || detailProductControls?.hidden) return;
+
+                const $select = window.jQuery(detailVariantSelect);
+                if ($select.hasClass('select2-hidden-accessible')) {
+                    $select.select2('destroy');
+                }
+
+                $select.select2({
+                    width: '100%',
+                    placeholder: detailVariantSelect.dataset.placeholder || 'Busca presentacion, precio o stock',
+                    dropdownParent: window.jQuery(detailOverlay),
+                    dropdownCssClass: 'website-product-variant-dropdown',
+                    selectionCssClass: 'website-product-variant-selection',
+                    minimumResultsForSearch: 0,
+                    language: {
+                        noResults: () => 'No encontramos esa presentacion',
+                        searching: () => 'Buscando...',
+                    },
+                });
+
+                $select
+                    .off('change.websiteProductVariantSelect')
+                    .on('change.websiteProductVariantSelect', () => updateDetailVariantPrice(true));
             }
 
             function formatCatalogPrice(value) {
@@ -688,23 +774,38 @@
             function openDetailModal(data) {
                 if (!detailOverlay || !detailMedia || !detailCategory || !detailTitle || !detailPrice || !
                     detailDescription) return;
+                destroyDetailVehicleSelect2();
+                destroyDetailVariantSelect2();
                 const fullItem = catalogItemsByKey.get(itemKey(data.tipo, data.id));
                 currentDetailItem = fullItem ? {
                     ...data,
                     ...fullItem
                 } : data;
 
-                detailMedia.innerHTML = data.imagen ?
-                    `<img src="${data.imagen}" alt="${data.nombre}" class="catalogo-modal-image">` :
-                    `<div class="catalogo-modal-placeholder">ITM</div>`;
+                const isProductDetail = currentDetailItem.tipo === 'catalog' && currentDetailItem.comprable && currentDetailItem.inventariable;
+                const isServiceDetail = currentDetailItem.tipo === 'catalog' && !currentDetailItem.inventariable;
+                const imageSrc = data.imagen || (currentDetailItem.imagen ? `/storage/${currentDetailItem.imagen}` : '');
+
+                detailOverlay.classList.toggle('is-product-detail', isProductDetail);
+                detailOverlay.classList.toggle('is-service-detail', isServiceDetail);
+                detailMedia.innerHTML = imageSrc ?
+                    `<img src="${imageSrc}" alt="${escapeHtml(currentDetailItem.nombre || '')}" class="catalogo-modal-image">` :
+                    `<div class="catalogo-modal-placeholder"><span>${isProductDetail ? 'Producto' : 'Servicio'}</span></div>`;
                 detailCategory.textContent =
                     `${currentDetailItem.tipo_label || 'Catalogo'} - ${currentDetailItem.categoria || ''}`;
                 detailTitle.textContent = currentDetailItem.nombre || '';
-                const isProductDetail = currentDetailItem.tipo === 'catalog' && currentDetailItem.comprable && currentDetailItem.inventariable;
-                const isServiceDetail = currentDetailItem.tipo === 'catalog' && !currentDetailItem.inventariable;
                 detailPrice.textContent = isProductDetail ? '' : `Desde $${Number(currentDetailItem.precio || 0).toFixed(2)}`;
                 detailDescription.textContent = currentDetailItem.descripcion || (isProductDetail ? '' : 'Sin descripcion adicional.');
                 detailDescription.hidden = isProductDetail && !Boolean(currentDetailItem.descripcion);
+                if (detailProductSummary) {
+                    detailProductSummary.hidden = !isProductDetail;
+                }
+                if (isProductDetail) {
+                    if (detailProductBusinessLine) detailProductBusinessLine.textContent = currentDetailItem.tipo_label || 'Catalogo';
+                    if (detailProductCategory) detailProductCategory.textContent = currentDetailItem.categoria || 'Sin categoria';
+                    if (detailProductName) detailProductName.textContent = currentDetailItem.nombre || '';
+                    if (detailProductDescription) detailProductDescription.textContent = currentDetailItem.descripcion || 'Sin descripcion adicional.';
+                }
                 renderServiceVehicleOptions(currentDetailItem);
 
                 if (detailServiceActions) {
@@ -724,9 +825,9 @@
                         variants.forEach((variant) => {
                             const option = document.createElement('option');
                             option.value = String(variant.id);
-                            option.textContent = buildVariantLabel(variant);
-                            option.disabled = Boolean(currentDetailItem.inventariable) && Number(variant
-                                .stock || 0) <= 0;
+                            option.textContent = buildVariantSearchLabel(variant);
+                            option.dataset.stock = String(Math.max(0, Number(variant.stock || 0)));
+                            option.dataset.price = String(Number(variant.price || 0));
                             detailVariantSelect.appendChild(option);
                         });
                         const availableVariants = variants.filter((variant) => !currentDetailItem.inventariable ||
@@ -746,6 +847,10 @@
                 } else if (detailProductControls) {
                     detailVariantSelect.innerHTML = '';
                     if (detailVariantPrice) detailVariantPrice.textContent = '';
+                    if (detailVariantStock) {
+                        detailVariantStock.textContent = '';
+                        detailVariantStock.classList.remove('is-empty');
+                    }
                     if (detailAddToCartBtn) {
                         detailAddToCartBtn.disabled = false;
                         detailAddToCartBtn.textContent = 'Agregar al carrito';
@@ -755,13 +860,16 @@
 
                 detailOverlay.hidden = false;
                 initDetailVehicleSelect2();
+                initDetailVariantSelect2();
                 document.body.style.overflow = 'hidden';
             }
 
             function closeDetailModal() {
                 if (!detailOverlay) return;
                 destroyDetailVehicleSelect2();
+                destroyDetailVariantSelect2();
                 detailOverlay.hidden = true;
+                detailOverlay.classList.remove('is-product-detail', 'is-service-detail');
                 document.body.style.overflow = '';
                 currentDetailItem = null;
             }
@@ -886,14 +994,20 @@
             });
 
             detailClose?.addEventListener('click', closeDetailModal);
-            detailVariantSelect?.addEventListener('change', updateDetailVariantPrice);
+            detailVariantSelect?.addEventListener('change', () => updateDetailVariantPrice(true));
             detailVehicleSelect?.addEventListener('change', updateServiceVehiclePrice);
             detailQtyMinus?.addEventListener('click', () => setDetailQuantity(Number(detailQtyInput?.value || 1) - 1));
             detailQtyPlus?.addEventListener('click', () => setDetailQuantity(Number(detailQtyInput?.value || 1) + 1));
             detailAddToCartBtn?.addEventListener('click', () => {
                 if (!currentDetailItem || currentDetailItem.tipo !== 'catalog') return;
-                const qty = Math.max(1, Number(detailQtyInput?.value || 1));
                 const variantId = Number(detailVariantSelect?.value || 0) || null;
+                const maxStock = getSelectedVariantStock();
+                if (currentDetailItem.inventariable && maxStock <= 0) {
+                    return window.websiteNotify?.('error', 'Esta presentacion esta agotada.');
+                }
+                const qty = currentDetailItem.inventariable
+                    ? Math.max(1, Math.min(Number(detailQtyInput?.value || 1), maxStock))
+                    : Math.max(1, Number(detailQtyInput?.value || 1));
                 addToCart(Number(currentDetailItem.id), currentDetailItem.tipo, qty, variantId);
                 closeDetailModal();
             });
