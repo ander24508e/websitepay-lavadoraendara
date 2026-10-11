@@ -10,6 +10,7 @@
         if ($empresa) {
             $sections = \App\Models\CatalogType::query()
                 ->where('empresa_id', $empresa->id)
+                ->whereIn('business_model', \App\Support\Permissions\CatalogPermission::visibleBusinessModels())
                 ->withCount(['categories', 'items'])
                 ->ordered()
                 ->get();
@@ -18,6 +19,8 @@
         $statusBadge = fn($active) => $active
             ? 'bg-green-100 text-green-700 border-green-200'
             : 'bg-gray-100 text-gray-500 border-gray-200';
+
+        $canCreateSection = \App\Support\Permissions\CatalogPermission::allowsAny('create');
 
         $isProductBusiness = fn($section) => ($section->business_model ?? 'services') === \App\Models\CatalogType::BUSINESS_MODEL_PRODUCTS;
         $businessModelLabel = fn($section) => $isProductBusiness($section) ? 'Productos' : 'Servicios';
@@ -33,11 +36,13 @@
                 <p class="text-gray-500 text-sm mt-1">Crea e ingresa a un negocio para crear sus categorías, servicios o productos, y
                     presentaciones.</p>
             </div>
+            @if($canCreateSection)
             <a href="{{ route('admin.catalog-types.create') }}"
                 class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition"
                 title="Nueva sección" aria-label="Nueva sección">
                 <x-heroicon-o-plus class="w-5 h-5" />
             </a>
+            @endif
         </div>
 
         <section class="bg-white rounded-xl shadow-sm overflow-hidden">
@@ -97,11 +102,13 @@
                         <x-heroicon-o-squares-2x2 class="w-12 h-12 text-gray-300 mx-auto mb-4" />
                         <p class="font-semibold text-gray-700">Todavía no hay negocios.</p>
                         <p class="text-sm text-gray-400 mt-1 mb-5">Empieza creando un negocio.</p>
+                        @if($canCreateSection)
                         <a href="{{ route('admin.catalog-types.create') }}"
                             class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition"
                             title="Nueva sección" aria-label="Nueva sección">
                             <x-heroicon-o-plus class="w-5 h-5" />
                         </a>
+                        @endif
                     </div>
                 @endforelse
             </div>
@@ -163,11 +170,13 @@
                                         <x-heroicon-o-squares-2x2 class="w-12 h-12 text-gray-300 mx-auto mb-4" />
                                         <p class="font-semibold text-gray-700">Todavía no hay negocios.</p>
                                         <p class="text-sm text-gray-400 mt-1 mb-5">Empieza creando un negocio.</p>
+                                        @if($canCreateSection)
                                         <a href="{{ route('admin.catalog-types.create') }}"
                                             class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-700 transition"
                                             title="Nueva sección" aria-label="Nueva sección">
                                             <x-heroicon-o-plus class="w-5 h-5" />
                                         </a>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

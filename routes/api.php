@@ -3,7 +3,7 @@
 use App\Http\Controllers\Api\OrderApiController;
 use Illuminate\Support\Facades\Route;
 
-Route::middleware(['auth', 'active', 'role:admin|gerente|empleado', 'permission:orders.view'])
+Route::middleware(['auth', 'active', 'staff', 'permission:orders.view'])
     ->prefix('orders')
     ->name('api.orders.')
     ->group(function () {

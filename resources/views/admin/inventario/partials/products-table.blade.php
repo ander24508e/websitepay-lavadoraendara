@@ -81,6 +81,7 @@
                         <x-heroicon-o-clipboard-document-list class="w-4 h-4" />
                         Kardex
                     </a>
+                    @can('inventory.move')
                     <button type="button"
                         class="open-stock-modal inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-3 py-2 rounded-lg hover:bg-gray-700 transition text-sm font-semibold"
                         data-product-id="{{ $product?->id }}" data-variant-id="{{ $variant->id }}"
@@ -91,6 +92,7 @@
                         <x-heroicon-o-archive-box class="w-4 h-4" />
                         Stock
                     </button>
+                    @endcan
                 </div>
             </article>
         @empty
@@ -183,6 +185,7 @@
                                     title="Kardex" aria-label="Kardex de {{ $product?->name ?? 'producto' }}">
                                     <x-heroicon-o-clipboard-document-list class="w-4 h-4" />
                                 </a>
+                                @can('inventory.move')
                                 <button type="button"
                                     class="open-stock-modal inline-flex items-center justify-center w-9 h-9 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition"
                                     data-product-id="{{ $product?->id }}" data-variant-id="{{ $variant->id }}"
@@ -192,6 +195,7 @@
                                     aria-label="Gestionar stock de {{ $product?->name ?? 'producto' }}">
                                     <x-heroicon-o-archive-box class="w-4 h-4" />
                                 </button>
+                                @endcan
                             </div>
                         </td>
                     </tr>

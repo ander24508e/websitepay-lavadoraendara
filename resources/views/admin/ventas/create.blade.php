@@ -84,7 +84,7 @@
                                 </label>
 
                                 <button type="button" id="openQuickClientModal"
-                                    class="inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-gray-900 px-3 text-xs font-semibold text-white transition hover:bg-gray-700">
+                                    class="@cannot('clients.create') !hidden @endcannot inline-flex h-8 items-center justify-center gap-1 rounded-lg bg-gray-900 px-3 text-xs font-semibold text-white transition hover:bg-gray-700">
                                     <x-heroicon-o-plus class="h-4 w-4" />
                                     Nuevo cliente
                                 </button>
@@ -430,7 +430,7 @@
                     <div class="mb-1 flex min-h-8 items-center justify-between gap-2">
                         <label class="text-[11px] font-semibold uppercase text-gray-500">Vehículo</label>
                         <button type="button"
-                            class="open-quick-vehicle-modal inline-flex h-7 items-center justify-center gap-1 rounded-lg bg-gray-900 px-2 text-[11px] font-semibold text-white transition hover:bg-gray-700">
+                            class="@cannot('vehicles.create') !hidden @endcannot open-quick-vehicle-modal inline-flex h-7 items-center justify-center gap-1 rounded-lg bg-gray-900 px-2 text-[11px] font-semibold text-white transition hover:bg-gray-700">
                             <x-heroicon-o-plus class="h-3.5 w-3.5" />
                             Nuevo
                         </button>

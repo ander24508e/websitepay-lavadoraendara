@@ -1,36 +1,49 @@
-﻿@extends('layouts.admin')
+@extends('layouts.admin')
 
 @section('title', 'Usuarios')
 
+@push('styles')
+    @vite('resources/scss/admin/roles.scss')
+@endpush
+
 @section('content')
-<div class="space-y-6">
+<div class="roles-page space-y-6">
     <div class="flex items-center justify-between gap-3 flex-wrap">
         <div>
             <div class="flex items-center gap-2">
             <x-heroicon-o-user-group class="w-8 h-8 text-gray-800" />
             <h2 class="text-2xl font-bold text-gray-800">Personal interno</h2>
             </div>
-            <p class="text-gray-500 text-sm mt-1">Gestiona gerentes, empleados y sus permisos. La cuenta propietaria y los clientes se administran por separado.</p>
+            <p class="text-gray-500 text-sm mt-1">Gestiona el personal interno y el rol de cada uno. Los permisos se definen en el rol. La cuenta propietaria y los clientes se administran por separado.</p>
         </div>
-        @canany(['users.create_employees', 'users.create_managers'])
-        <a href="{{ route('admin.usuarios.create') }}"
-            class="inline-flex items-center justify-center bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-700 transition"
-            title="Nuevo usuario" aria-label="Nuevo usuario">
-            <x-heroicon-o-plus class="w-5 h-5" />
-        </a>
-        @endcanany
+        <div class="flex items-center gap-2 flex-wrap">
+            @can('roles.view')
+                <a href="{{ route('admin.roles.index') }}" class="roles-btn roles-btn--ghost" title="Roles" aria-label="Ir a roles">
+                    <x-heroicon-o-shield-check class="w-5 h-5" />
+                    <span>Roles</span>
+                </a>
+            @endcan
+            @can('users.create')
+                <a href="{{ route('admin.usuarios.create') }}"
+                    class="inline-flex items-center justify-center bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-gray-700 transition"
+                    title="Nuevo usuario" aria-label="Nuevo usuario">
+                    <x-heroicon-o-plus class="w-5 h-5" />
+                </a>
+            @endcan
+        </div>
     </div>
 
     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
         <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><p class="text-xs text-gray-400 uppercase font-semibold">Personal</p><p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['total_usuarios'] }}</p></div>
-        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><p class="text-xs text-gray-400 uppercase font-semibold">Gerentes</p><p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['gerentes'] }}</p></div>
-        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><p class="text-xs text-gray-400 uppercase font-semibold">Empleados</p><p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['empleados'] }}</p></div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><p class="text-xs text-gray-400 uppercase font-semibold">Activos</p><p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['activos'] }}</p></div>
+        <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm"><p class="text-xs text-gray-400 uppercase font-semibold">Roles creados</p><p class="text-2xl font-bold text-gray-800 mt-1">{{ $stats['roles'] }}</p></div>
     </div>
 
     <div class="bg-white rounded-xl border border-gray-100 p-4 shadow-sm">
         <form method="GET" class="flex flex-col md:flex-row gap-3">
             <input type="text" name="q" value="{{ $search }}" placeholder="Buscar por nombre, correo o telefono" class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm">
             <select name="status" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">Todos los estados</option><option value="active" @selected($status === 'active')>Activos</option><option value="inactive" @selected($status === 'inactive')>Inactivos</option></select>
+            <select name="role_id" class="border border-gray-300 rounded-lg px-3 py-2 text-sm"><option value="">Todos los roles</option>@foreach($roles as $roleOption)<option value="{{ $roleOption->id }}" @selected((int) $roleId === $roleOption->id)>{{ $roleOption->name }}</option>@endforeach</select>
             <button class="bg-gray-900 text-white px-4 py-2 rounded-lg text-sm font-medium">Buscar</button>
             <a href="{{ route('admin.usuarios.index') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-medium">Limpiar</a>
         </form>
@@ -40,12 +53,7 @@
         <div class="md:hidden divide-y divide-gray-100">
             @forelse($usuarios as $usuario)
                 @php
-                    $roleName = $usuario->roles->pluck('name')->first() ?? 'sin-rol';
-                    $roleClass = [
-                        'admin' => 'bg-red-100 text-red-700',
-                        'gerente' => 'bg-purple-100 text-purple-700',
-                        'empleado' => 'bg-blue-100 text-blue-700',
-                    ][$roleName] ?? 'bg-gray-100 text-gray-600';
+                    $userRole = $usuario->staffRole();
                 @endphp
                 <article class="p-4">
                     <div class="flex items-start justify-between gap-3">
@@ -53,7 +61,7 @@
                             <h4 class="font-semibold text-gray-800 break-words">{{ $usuario->name }}</h4>
                             <p class="text-xs text-gray-400 mt-0.5">ID #{{ $usuario->id }}</p>
                         </div>
-                        <span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold shrink-0 {{ $roleClass }}">{{ ucfirst($roleName) }}</span>
+                        <span class="roles-pill roles-pill--primary shrink-0">{{ $userRole?->name ?? 'Sin rol' }}</span>
                     </div>
 
                     <div class="grid grid-cols-1 gap-2 mt-3 text-sm">
@@ -83,13 +91,13 @@
                             title="Ver usuario" aria-label="Ver usuario">
                             <x-heroicon-o-eye class="w-5 h-5" />
                         </a>
-                        @can('users.update')<a href="{{ route('admin.usuarios.edit', $usuario) }}"
+                        @if(! $usuario->is(auth()->user())) @can('users.update')<a href="{{ route('admin.usuarios.edit', $usuario) }}"
                             class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 transition"
                             title="Editar usuario" aria-label="Editar usuario">
                             <x-heroicon-o-pencil-square class="w-5 h-5" />
                         </a>
-                        @endcan
-                        @if($usuario->active) @can('users.deactivate')<form method="POST" action="{{ route('admin.usuarios.destroy', $usuario) }}" onsubmit="return confirm('¿Desactivar el acceso de este trabajador?');">
+                        @endcan @endif
+                        @if($usuario->active && ! $usuario->is(auth()->user())) @can('users.deactivate')<form method="POST" action="{{ route('admin.usuarios.destroy', $usuario) }}" onsubmit="return confirm('¿Desactivar el acceso de este trabajador?');">
                             @csrf
                             @method('DELETE')
                             <button type="submit"
@@ -122,12 +130,7 @@
                 <tbody>
                     @forelse($usuarios as $usuario)
                         @php
-                            $roleName = $usuario->roles->pluck('name')->first() ?? 'sin-rol';
-                            $roleClass = [
-                            'admin' => 'bg-red-100 text-red-700',
-                            'gerente' => 'bg-purple-100 text-purple-700',
-                            'empleado' => 'bg-blue-100 text-blue-700',
-                            ][$roleName] ?? 'bg-gray-100 text-gray-600';
+                            $userRole = $usuario->staffRole();
                         @endphp
                         <tr class="border-t border-gray-100">
                             <td class="px-4 py-3 text-center">
@@ -136,7 +139,7 @@
                             </td>
                             <td class="px-4 py-3 text-gray-600 text-center truncate">{{ $usuario->email }}</td>
                             <td class="px-4 py-3 text-gray-600 text-center truncate">{{ $usuario->telefono ?? '-' }}</td>
-                            <td class="px-4 py-3 text-center"><span class="inline-flex px-2 py-0.5 rounded-full text-xs font-semibold {{ $roleClass }}">{{ ucfirst($roleName) }}</span></td>
+                            <td class="px-4 py-3 text-center"><span class="roles-pill roles-pill--primary max-w-full truncate">{{ $userRole?->name ?? 'Sin rol' }}</span>@unless($usuario->active)<span class="block text-[11px] text-red-500 mt-1">Inactivo</span>@endunless</td>
                             <td class="px-4 py-3 text-gray-700 text-center">{{ $usuario->assigned_orders_count }}</td>
                             <td class="px-4 py-3 text-gray-500 text-center">{{ $usuario->created_at?->format('d/m/Y') ?? '-' }}</td>
                             <td class="px-4 py-3 text-center">
@@ -146,13 +149,13 @@
                                     title="Ver usuario" aria-label="Ver usuario">
                                     <x-heroicon-o-eye class="w-4 h-4" />
                                 </a>
-                                @can('users.update')<a href="{{ route('admin.usuarios.edit', $usuario) }}"
+                                @if(! $usuario->is(auth()->user())) @can('users.update')<a href="{{ route('admin.usuarios.edit', $usuario) }}"
                                     class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-yellow-600 hover:text-yellow-800 hover:bg-yellow-50 transition"
                                     title="Editar usuario" aria-label="Editar usuario">
                                     <x-heroicon-o-pencil-square class="w-4 h-4" />
                                 </a>
-                                @endcan
-                                @if($usuario->active) @can('users.deactivate')<form method="POST" action="{{ route('admin.usuarios.destroy', $usuario) }}" onsubmit="return confirm('¿Desactivar el acceso de este trabajador?');">
+                                @endcan @endif
+                                @if($usuario->active && ! $usuario->is(auth()->user())) @can('users.deactivate')<form method="POST" action="{{ route('admin.usuarios.destroy', $usuario) }}" onsubmit="return confirm('¿Desactivar el acceso de este trabajador?');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit"

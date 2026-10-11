@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\VehicleSpecification;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Role;
+use App\Models\Role;
 
 class ClientesController extends Controller
 {
@@ -111,8 +111,7 @@ class ClientesController extends Controller
             'password' => $data['password'],
         ]);
 
-        $role = Role::firstOrCreate(['name' => 'cliente', 'guard_name' => 'web']);
-        $cliente->assignRole($role);
+        $cliente->syncRoles([Role::client()]);
 
         return $cliente;
     }

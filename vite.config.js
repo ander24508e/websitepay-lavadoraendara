@@ -23,6 +23,7 @@ export default defineConfig({
                 'resources/scss/admin/orders-index.scss',
                 'resources/scss/admin/orders-show.scss',
                 'resources/scss/admin/admin-data-tables.scss',
+                'resources/scss/admin/roles.scss',
                 'resources/js/app.js'
             ],
             refresh: true,

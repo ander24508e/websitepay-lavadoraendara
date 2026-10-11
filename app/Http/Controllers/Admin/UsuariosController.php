@@ -3,27 +3,26 @@
 namespace App\Http\Controllers\Admin;
 
 use App\Http\Controllers\Controller;
+use App\Models\Role;
 use App\Models\User;
 use App\Models\UserAudit;
+use App\Support\Permissions\PermissionCatalog;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 class UsuariosController extends Controller
 {
-    private const STAFF_ROLES = ['gerente', 'empleado'];
-
     public function index(Request $request)
     {
         $search = trim((string) $request->query('q', ''));
         $status = trim((string) $request->query('status', ''));
-        $actor = $request->user();
+        $roleId = $request->integer('role_id') ?: null;
 
-        $usuarios = $this->visibleStaffQuery($actor)
-            ->with(['roles', 'manager:id,name'])
+        $usuarios = $this->staffQuery()
+            ->with('roles')
             ->withCount('assignedOrders')
             ->when($search !== '', function (Builder $query) use ($search) {
                 $query->where(function (Builder $sub) use ($search) {
@@ -34,29 +33,36 @@ class UsuariosController extends Controller
             })
             ->when($status === 'active', fn (Builder $query) => $query->where('active', true))
             ->when($status === 'inactive', fn (Builder $query) => $query->where('active', false))
+            ->when($roleId, fn (Builder $query) => $query->whereHas('roles', fn (Builder $roles) => $roles->whereKey($roleId)))
             ->latest()
             ->paginate(15)
             ->withQueryString();
 
-        $statsQuery = $this->visibleStaffQuery($actor);
+        $statsQuery = $this->staffQuery();
         $stats = [
             'total_usuarios' => (clone $statsQuery)->count(),
-            'gerentes' => (clone $statsQuery)->role('gerente')->count(),
-            'empleados' => (clone $statsQuery)->role('empleado')->count(),
+            'activos' => (clone $statsQuery)->where('active', true)->count(),
+            'roles' => Role::query()->manageable()->count(),
         ];
+        $roles = Role::query()->manageable()->orderBy('name')->get(['id', 'name']);
 
-        return view('admin.usuarios.index', compact('usuarios', 'stats', 'search', 'status'));
+        return view('admin.usuarios.index', compact('usuarios', 'stats', 'search', 'status', 'roles', 'roleId'));
     }
 
-    public function show(Request $request, User $usuario)
+    public function show(User $usuario)
     {
-        $this->ensureVisible($request->user(), $usuario);
+        $this->ensureStaff($usuario);
 
         $usuario->load([
-            'roles', 'permissions', 'manager:id,name', 'createdBy:id,name',
+            'roles.permissions',
+            'createdBy:id,name',
             'assignedOrders' => fn ($query) => $query->latest()->take(10),
-            'audits.actor:id,name',
         ]);
+
+        $role = $usuario->staffRole();
+        $rolePermissions = $role
+            ? PermissionCatalog::groupsFor($role->permissions->pluck('name')->all())
+            : collect();
 
         $resumen = [
             'ordenes_asignadas' => $usuario->assignedOrders()->count(),
@@ -65,31 +71,23 @@ class UsuariosController extends Controller
             'registro' => $usuario->created_at,
         ];
 
-        return view('admin.usuarios.show', compact('usuario', 'resumen'));
+        return view('admin.usuarios.show', compact('usuario', 'role', 'rolePermissions', 'resumen'));
     }
 
     public function create(Request $request)
     {
-        $actor = $request->user();
-        $roles = $this->assignableRoles($actor);
-        abort_if($roles->isEmpty(), 403);
-
-        return view('admin.usuarios.create', $this->formData($actor, $roles));
+        return view('admin.usuarios.create', [
+            'roles' => $this->assignableRoles($request->user()),
+        ]);
     }
 
     public function store(Request $request)
     {
         $actor = $request->user();
-        $roles = $this->assignableRoles($actor)->pluck('name')->all();
-        abort_if(empty($roles), 403);
-
-        $permissionNames = $this->assignablePermissions($actor)->pluck('name')->all();
-        $data = $request->validate($this->rules($roles, $permissionNames));
+        $data = $request->validate($this->rules($actor));
 
         $usuario = DB::transaction(function () use ($actor, $data) {
-            $managerId = $actor->hasRole('gerente')
-                ? $actor->id
-                : $this->validatedManagerId($data['manager_id'] ?? null);
+            $role = Role::query()->findOrFail($data['role_id']);
 
             $usuario = User::create([
                 'name' => $data['name'],
@@ -99,24 +97,17 @@ class UsuariosController extends Controller
                 'password' => $data['password'],
                 'active' => (bool) ($data['active'] ?? true),
                 'created_by' => $actor->id,
-                'manager_id' => $data['role'] === 'empleado' ? $managerId : null,
             ]);
 
-            $usuario->syncRoles([$data['role']]);
-            if ($this->canAssignPermissions($actor)) {
-                $usuario->syncPermissions($data['permissions'] ?? []);
-            }
+            $usuario->syncRoles([$role]);
 
-            $this->audit($usuario, $actor, 'staff.created', [
-                'role' => $data['role'],
-                'permissions' => $data['permissions'] ?? [],
-            ]);
+            $this->audit($usuario, $actor, 'staff.created', ['role' => $role->name]);
 
             return $usuario;
         });
 
         return redirect()->route('admin.usuarios.show', $usuario)
-            ->with('success', 'Personal creado correctamente.');
+            ->with('success', 'Usuario creado correctamente.');
     }
 
     public function edit(Request $request, User $usuario)
@@ -125,8 +116,8 @@ class UsuariosController extends Controller
         $this->ensureManageable($actor, $usuario);
 
         return view('admin.usuarios.edit', [
-            'usuario' => $usuario->load(['roles', 'permissions']),
-            ...$this->formData($actor, $this->assignableRoles($actor)),
+            'usuario' => $usuario->load('roles'),
+            'roles' => $this->assignableRoles($actor, $usuario->staffRole()),
         ]);
     }
 
@@ -135,15 +126,14 @@ class UsuariosController extends Controller
         $actor = $request->user();
         $this->ensureManageable($actor, $usuario);
 
-        $roles = $this->assignableRoles($actor)->pluck('name')->all();
-        $permissionNames = $this->assignablePermissions($actor)->pluck('name')->all();
-        $data = $request->validate($this->rules($roles, $permissionNames, $usuario));
+        $currentRole = $usuario->staffRole();
+        $data = $request->validate($this->rules($actor, $usuario, $currentRole));
 
-        DB::transaction(function () use ($actor, $usuario, $data) {
+        DB::transaction(function () use ($actor, $usuario, $data, $currentRole) {
+            $role = Role::query()->findOrFail($data['role_id']);
             $before = [
-                'role' => $usuario->roles->pluck('name')->first(),
+                'role' => $currentRole?->name,
                 'active' => $usuario->active,
-                'permissions' => $usuario->getDirectPermissions()->pluck('name')->all(),
             ];
 
             $payload = [
@@ -151,52 +141,41 @@ class UsuariosController extends Controller
                 'email' => $data['email'],
                 'telefono' => $this->clean($data['telefono'] ?? null),
                 'direccion' => $this->clean($data['direccion'] ?? null),
-                'manager_id' => $data['role'] === 'empleado'
-                    ? ($actor->hasRole('gerente') ? $actor->id : $this->validatedManagerId($data['manager_id'] ?? null))
-                    : null,
             ];
 
             if (! empty($data['password'])) {
                 $payload['password'] = $data['password'];
             }
-            if ($actor->isOwner() || $actor->can('users.deactivate')) {
+            if ($actor->can('users.deactivate')) {
                 $payload['active'] = (bool) ($data['active'] ?? false);
             }
 
             $usuario->update($payload);
-            $usuario->syncRoles([$data['role']]);
-            if ($this->canAssignPermissions($actor)) {
-                $usuario->syncPermissions($data['permissions'] ?? []);
-            }
+            $usuario->syncRoles([$role]);
 
             $this->audit($usuario, $actor, 'staff.updated', [
                 'before' => $before,
-                'after' => [
-                    'role' => $data['role'],
-                    'active' => $usuario->active,
-                    'permissions' => $data['permissions'] ?? $before['permissions'],
-                ],
+                'after' => ['role' => $role->name, 'active' => $usuario->active],
             ]);
         });
 
         return redirect()->route('admin.usuarios.show', $usuario)
-            ->with('success', 'Personal actualizado correctamente.');
+            ->with('success', 'Usuario actualizado correctamente.');
     }
 
     public function destroy(Request $request, User $usuario)
     {
         $actor = $request->user();
         $this->ensureManageable($actor, $usuario);
-        abort_unless($actor->isOwner() || $actor->can('users.deactivate'), 403);
 
         $usuario->update(['active' => false]);
         $this->audit($usuario, $actor, 'staff.deactivated');
 
         return redirect()->route('admin.usuarios.index')
-            ->with('success', 'El acceso del trabajador fue desactivado; su historial se conserva.');
+            ->with('success', 'El acceso del usuario fue desactivado; su historial se conserva.');
     }
 
-    private function rules(array $roles, array $permissions, ?User $usuario = null): array
+    private function rules(User $actor, ?User $usuario = null, ?Role $currentRole = null): array
     {
         $uniqueEmail = Rule::unique('users', 'email');
         if ($usuario) {
@@ -209,122 +188,71 @@ class UsuariosController extends Controller
             'telefono' => ['nullable', 'string', 'max:50'],
             'direccion' => ['nullable', 'string', 'max:500'],
             'password' => [$usuario ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
-            'role' => ['required', Rule::in($roles)],
-            'manager_id' => ['nullable', 'integer', 'exists:users,id'],
+            'role_id' => ['required', 'integer', Rule::in($this->assignableRoles($actor, $currentRole)->pluck('id')->all())],
             'active' => ['nullable', 'boolean'],
-            'permissions' => ['nullable', 'array'],
-            'permissions.*' => [Rule::in($permissions)],
         ];
     }
 
-    private function visibleStaffQuery(User $actor): Builder
+    /**
+     * Personal interno: usuarios (no propietarios) con un rol que no es cliente.
+     */
+    private function staffQuery(): Builder
     {
         return User::query()
             ->where('is_owner', false)
-            ->whereHas('roles', fn (Builder $query) => $query->whereIn('name', self::STAFF_ROLES))
-            ->when(! $actor->isOwner(), function (Builder $query) use ($actor) {
-                $query->whereHas('roles', fn (Builder $roles) => $roles->where('name', 'empleado'))
-                    ->where(function (Builder $staff) use ($actor) {
-                        $staff->where('manager_id', $actor->id)->orWhere('created_by', $actor->id);
-                    });
-            });
+            ->whereHas('roles', fn (Builder $query) => $query->where('is_system', false));
     }
 
-    private function ensureVisible(User $actor, User $target): void
+    private function ensureStaff(User $target): void
     {
-        abort_unless($this->visibleStaffQuery($actor)->whereKey($target->id)->exists(), 404);
+        abort_unless($this->staffQuery()->whereKey($target->id)->exists(), 404);
     }
 
     private function ensureManageable(User $actor, User $target): void
     {
-        $this->ensureVisible($actor, $target);
-        abort_if($target->isOwner() || $target->is($actor), 403);
-        abort_if(! $actor->isOwner() && ! $target->hasRole('empleado'), 403);
-    }
+        $this->ensureStaff($target);
+        abort_if($target->is($actor), 403, 'No puedes modificar tu propia cuenta desde este modulo.');
 
-    private function assignableRoles(User $actor)
-    {
-        $names = $actor->isOwner()
-            ? ['gerente', 'empleado']
-            : ($actor->can('users.create_employees') ? ['empleado'] : []);
-
-        return Role::query()->whereIn('name', $names)->orderBy('name')->get();
-    }
-
-    private function assignablePermissions(User $actor)
-    {
-        $query = Permission::query()->where('guard_name', 'web')->orderBy('name');
-
-        if (! $actor->isOwner()) {
-            $query->whereIn('name', $actor->getAllPermissions()->pluck('name'))
-                ->where('name', 'not like', 'users.%');
+        if ($actor->isOwner()) {
+            return;
         }
 
-        return $query->get();
+        $targetRole = $target->staffRole();
+        abort_if($targetRole && ! $this->canGrantRole($actor, $targetRole), 403, 'Este usuario tiene un rol con permisos que tu no posees.');
     }
 
-    private function permissionGroups(User $actor): array
+    /**
+     * Roles activos que el actor puede asignar. Un usuario que no es propietario
+     * solo asigna roles cuyos permisos ya posee (evita escalar privilegios).
+     * Se conserva el rol actual del usuario editado aunque este inactivo.
+     */
+    private function assignableRoles(User $actor, ?Role $currentRole = null): Collection
     {
-        $labels = [
-            'dashboard' => 'Dashboard', 'users' => 'Usuarios', 'sales' => 'Ventas',
-            'transactions' => 'Pagos', 'orders' => 'Ordenes', 'clients' => 'Clientes',
-            'vehicles' => 'Vehiculos', 'catalog' => 'Catalogo', 'inventory' => 'Inventario',
-            'company' => 'Empresa', 'banners' => 'Banners',
-        ];
-        $operationLabels = [
-            'banners.view' => 'Ver banners',
-            'banners.create' => 'Crear banners',
-            'banners.update' => 'Editar banners',
-            'banners.delete' => 'Eliminar banners',
-        ];
+        $roles = Role::query()
+            ->manageable()
+            ->where(fn (Builder $query) => $query
+                ->where('active', true)
+                ->when($currentRole, fn (Builder $sub) => $sub->orWhere('id', $currentRole->id)))
+            ->with('permissions')
+            ->orderBy('name')
+            ->get();
 
-        return $this->assignablePermissions($actor)
-            ->groupBy(fn (Permission $permission) => str($permission->name)->before('.')->toString())
-            ->map(function ($items, string $group) use ($labels, $operationLabels): array {
-                $items->each(function (Permission $permission) use ($operationLabels): void {
-                    $permission->setAttribute(
-                        'display_name',
-                        $operationLabels[$permission->name]
-                            ?? str($permission->name)->after('.')->replace('_', ' ')->headline()
-                    );
-                });
-
-                return [
-                    'label' => $labels[$group] ?? ucfirst($group),
-                    'permissions' => $items,
-                ];
-            })->all();
-    }
-
-    private function formData(User $actor, $roles): array
-    {
-        return [
-            'roles' => $roles,
-            'permissionGroups' => $this->permissionGroups($actor),
-            'managers' => $this->availableManagers($actor),
-            'canAssignPermissions' => $this->canAssignPermissions($actor),
-        ];
-    }
-
-    private function availableManagers(User $actor)
-    {
-        return $actor->isOwner()
-            ? User::query()->role('gerente')->where('active', true)->orderBy('name')->get(['id', 'name'])
-            : collect([$actor]);
-    }
-
-    private function canAssignPermissions(User $actor): bool
-    {
-        return $actor->isOwner() || $actor->can('users.manage_permissions');
-    }
-
-    private function validatedManagerId(mixed $managerId): ?int
-    {
-        if (! $managerId) {
-            return null;
+        if ($actor->isOwner()) {
+            return $roles;
         }
 
-        return User::query()->role('gerente')->where('active', true)->findOrFail((int) $managerId)->id;
+        return $roles->filter(fn (Role $role) => $this->canGrantRole($actor, $role))->values();
+    }
+
+    private function canGrantRole(User $actor, Role $role): bool
+    {
+        if ($actor->isOwner()) {
+            return true;
+        }
+
+        $actorPermissions = $actor->getAllPermissions()->pluck('name')->all();
+
+        return array_diff($role->permissions->pluck('name')->all(), $actorPermissions) === [];
     }
 
     private function audit(User $target, User $actor, string $action, array $payload = []): void

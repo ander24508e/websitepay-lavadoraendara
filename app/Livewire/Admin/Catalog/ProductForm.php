@@ -8,6 +8,7 @@ use App\Models\CatalogItem;
 use App\Models\CatalogItemVariant;
 use App\Models\CatalogType;
 use App\Models\Empresa;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -86,6 +87,7 @@ class ProductForm extends Component
 
     public function save(): void
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, $this->catalogItemId ? 'update' : 'create');
         $this->selectedCategoryId = $this->selectedCategoryId ?: null;
         $data = $this->validate();
         $empresa = $this->getOrCreateEmpresa();

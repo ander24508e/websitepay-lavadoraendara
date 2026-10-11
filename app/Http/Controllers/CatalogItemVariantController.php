@@ -7,6 +7,7 @@ use App\Models\CatalogItem;
 use App\Models\CatalogItemVariant;
 use App\Models\CatalogType;
 use App\Models\Empresa;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 
@@ -14,6 +15,7 @@ class CatalogItemVariantController extends Controller
 {
     public function index(Request $request)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'view');
         $empresa = $this->getOrCreateEmpresa();
         $search = trim((string) $request->query('q', ''));
         $selectedItemId = (int) $request->query('catalog_item_id', 0);
@@ -59,6 +61,7 @@ class CatalogItemVariantController extends Controller
 
     public function create(Request $request)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'update');
         $empresa = $this->getOrCreateEmpresa();
         $selectedItemId = (int) $request->query('catalog_item_id', 0);
         $selectedTypeId = (int) $request->query('catalog_type_id', 0);
@@ -79,6 +82,7 @@ class CatalogItemVariantController extends Controller
 
     public function store(Request $request)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'update');
         $empresa = $this->getOrCreateEmpresa();
 
         $data = $request->validate([
@@ -132,6 +136,7 @@ class CatalogItemVariantController extends Controller
 
     public function show(CatalogItemVariant $catalogVariant)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'view');
         $catalogVariant->load(['item.type', 'item.category']);
 
         if (!$this->isProductVariant($catalogVariant)) {
@@ -144,6 +149,7 @@ class CatalogItemVariantController extends Controller
 
     public function edit(Request $request, CatalogItemVariant $catalogVariant)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'update');
         $catalogVariant->load('item.type');
 
         if (!$this->isProductVariant($catalogVariant)) {
@@ -167,6 +173,7 @@ class CatalogItemVariantController extends Controller
 
     public function update(Request $request, CatalogItemVariant $catalogVariant)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'update');
         $catalogVariant->load('item.type');
 
         if (!$this->isProductVariant($catalogVariant)) {
@@ -223,6 +230,7 @@ class CatalogItemVariantController extends Controller
 
     public function destroy(CatalogItemVariant $catalogVariant)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_PRODUCTS, 'update');
         $catalogVariant->load('item.type');
 
         if (!$this->isProductVariant($catalogVariant)) {

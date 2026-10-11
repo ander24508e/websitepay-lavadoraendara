@@ -10,7 +10,7 @@
             <p class="text-sm text-gray-500 mt-1">{{ $variant->item?->name }} - {{ $variant->name }} {{ $variant->sku ? '(' . $variant->sku . ')' : '' }}</p>
         </div>
         <div class="flex gap-2">
-            <a href="{{ route('admin.inventario.kardex.export', ['variant' => $variant, ...request()->query()]) }}" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">Exportar</a>
+            @can('inventory.export')<a href="{{ route('admin.inventario.kardex.export', ['variant' => $variant, ...request()->query()]) }}" class="bg-white border border-gray-200 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">Exportar</a>@endcan
             <a href="{{ route('admin.inventario.index') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">Volver</a>
         </div>
     </div>

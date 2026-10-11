@@ -8,11 +8,13 @@
         porque no tienen existencias físicas.
     </p>
     <div class="mt-6 flex flex-col sm:flex-row justify-center gap-3">
+        @can('catalog.products.create')
         <a href="{{ route('admin.catalog-types.create', ['business_model' => 'products']) }}"
             class="inline-flex items-center justify-center gap-2 bg-gray-900 text-white px-5 py-2.5 rounded-lg hover:bg-gray-700 transition text-sm font-semibold">
             <x-heroicon-o-plus class="w-5 h-5" />
             Crear negocio de productos
         </a>
+        @endcan
         <a href="{{ route('admin.catalog.index') }}"
             class="inline-flex items-center justify-center gap-2 bg-gray-100 text-gray-700 px-5 py-2.5 rounded-lg hover:bg-gray-200 transition text-sm font-semibold">
             <x-heroicon-o-squares-2x2 class="w-5 h-5" />

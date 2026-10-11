@@ -40,7 +40,7 @@ class InventoryOperationsController extends Controller
 
     public function storeLocation(Request $request)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.locations.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([
@@ -85,7 +85,7 @@ class InventoryOperationsController extends Controller
 
     public function storeSupplier(Request $request)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.suppliers.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([
@@ -131,7 +131,7 @@ class InventoryOperationsController extends Controller
 
     public function storePurchase(Request $request, InventoryService $inventoryService)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.purchases.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([
@@ -234,7 +234,7 @@ class InventoryOperationsController extends Controller
 
     public function storeTransfer(Request $request, InventoryService $inventoryService)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.transfers.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([
@@ -405,7 +405,7 @@ class InventoryOperationsController extends Controller
 
     public function storeReturn(Request $request, InventoryService $inventoryService)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.returns.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([
@@ -496,7 +496,7 @@ class InventoryOperationsController extends Controller
 
     public function storeCount(Request $request, InventoryService $inventoryService)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.counts.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([
@@ -589,7 +589,7 @@ class InventoryOperationsController extends Controller
 
     public function exportReport(Request $request, string $section)
     {
-        abort_unless($this->canInventory('inventory.export'), 403);
+        abort_unless($this->canInventory('inventory.reports.view'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $report = $this->inventoryReportData($empresa, $request);
@@ -621,7 +621,7 @@ class InventoryOperationsController extends Controller
 
     public function storePeriod(Request $request)
     {
-        abort_unless($this->canInventory('inventory.close_periods'), 403);
+        abort_unless($this->canInventory('inventory.periods.create'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $data = $request->validate([

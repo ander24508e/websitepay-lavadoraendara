@@ -204,7 +204,7 @@ class InventarioController extends Controller
 
     public function import()
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.import'), 403);
 
         return view('admin.inventario.import', [
             'previewRows' => collect(),
@@ -215,7 +215,7 @@ class InventarioController extends Controller
 
     public function previewImport(Request $request)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.import'), 403);
 
         $request->validate([
             'inventory_file' => ['required', 'file', 'mimes:csv,txt', 'max:4096'],
@@ -233,7 +233,7 @@ class InventarioController extends Controller
 
     public function storeImport(Request $request, InventoryService $inventoryService)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.import'), 403);
 
         $data = $request->validate([
             'rows' => ['required', 'string'],
@@ -365,7 +365,7 @@ class InventarioController extends Controller
 
     public function edit(InventoryMovement $movement)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.update'), 403);
 
         $empresa = $this->getOrCreateEmpresa();
         $this->ensureInventoryMovement($movement, $empresa);
@@ -386,7 +386,7 @@ class InventarioController extends Controller
 
     public function update(Request $request, InventoryMovement $movement)
     {
-        abort_unless($this->canInventory('inventory.move'), 403);
+        abort_unless($this->canInventory('inventory.update'), 403);
 
         $this->ensureInventoryMovement($movement, $this->getOrCreateEmpresa());
 

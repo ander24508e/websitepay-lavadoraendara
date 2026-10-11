@@ -31,11 +31,14 @@
             </div>
 
             <div class="flex flex-wrap items-center gap-2">
+                @can('clients.update')
                 <a href="{{ route('admin.clientes.edit', $cliente) }}"
                     class="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700">
                     Editar
                 </a>
+                @endcan
 
+                @can('clients.delete')
                 <form method="POST" action="{{ route('admin.clientes.destroy', $cliente) }}"
                     onsubmit="return confirm('¿Eliminar cliente?');">
                     @csrf
@@ -46,6 +49,7 @@
                         Eliminar
                     </button>
                 </form>
+                @endcan
 
                 <a href="{{ route('admin.clientes.index') }}"
                     class="inline-flex items-center justify-center rounded-lg px-4 py-2 text-sm font-semibold text-gray-700 transition hover:bg-white">
@@ -150,11 +154,13 @@
                         <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                             {{ $cliente->vehicles->count() }} registrados
                         </span>
+                        @can('vehicles.create')
                         <button type="button" data-open-vehicle-modal
                             class="inline-flex items-center justify-center gap-2 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-gray-700">
                             <x-heroicon-o-plus class="h-4 w-4" />
                             Vehículo
                         </button>
+                        @endcan
                     </div>
                 </div>
 
@@ -325,9 +331,11 @@
                             </select>
                             <div class="mt-2 flex flex-wrap items-center justify-between gap-2">
                                 <p class="text-xs text-gray-400">Usa las especificaciones reutilizables del módulo Vehículos.</p>
+                                @can('vehicles.specifications.view')
                                 <a href="{{ route('admin.vehiculos.specifications.index') }}" class="text-xs font-semibold text-blue-600 hover:underline">
                                     Administrar especificaciones
                                 </a>
+                                @endcan
                             </div>
                         </div>
 

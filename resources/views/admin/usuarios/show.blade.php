@@ -3,9 +3,6 @@
 @section('title', 'Detalle del trabajador')
 
 @section('content')
-    @php
-        $currentRole = $usuario->roles->pluck('name')->first() ?? 'sin-rol';
-    @endphp
 
     <div class="mx-auto w-full max-w-6xl overflow-x-hidden px-3 pb-4 sm:px-6">
         <div class="mb-4 flex items-start gap-3">
@@ -29,7 +26,7 @@
                         </div>
                         <div class="min-w-0">
                             <h3 class="break-words text-lg font-bold text-gray-800">Información del trabajador</h3>
-                            <p class="text-xs text-gray-400">{{ ucfirst($currentRole) }}</p>
+                            <p class="text-xs text-gray-400">{{ $role?->name ?? 'Sin rol' }}</p>
                         </div>
                     </div>
 
@@ -37,7 +34,7 @@
                         <div><p class="text-xs uppercase tracking-wide text-gray-400">Correo</p><p class="break-all text-sm font-semibold text-gray-800">{{ $usuario->email }}</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-gray-400">Teléfono</p><p class="text-sm font-semibold text-gray-800">{{ $usuario->telefono ?: 'Sin registrar' }}</p></div>
                         <div><p class="text-xs uppercase tracking-wide text-gray-400">Dirección</p><p class="break-words text-sm text-gray-700">{{ $usuario->direccion ?: 'Sin registrar' }}</p></div>
-                        <div><p class="text-xs uppercase tracking-wide text-gray-400">Rol interno</p><span class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">{{ ucfirst($currentRole) }}</span></div>
+                        <div><p class="text-xs uppercase tracking-wide text-gray-400">Rol</p><span class="inline-flex rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-700">{{ $role?->name ?? 'Sin rol' }}</span>@if($role && ! $role->active)<span class="ml-1 inline-flex rounded-full bg-red-100 px-2 py-1 text-xs font-medium text-red-700">Rol inactivo</span>@endif</div>
                         <div>
                             <p class="text-xs uppercase tracking-wide text-gray-400">Estado</p>
                             @if($usuario->active)
@@ -46,13 +43,13 @@
                                 <span class="inline-flex rounded-full bg-red-100 px-3 py-1 text-xs font-medium text-red-700">Inactivo</span>
                             @endif
                         </div>
-                        <div><p class="text-xs uppercase tracking-wide text-gray-400">Gerente responsable</p><p class="text-sm font-semibold text-gray-800">{{ $usuario->manager?->name ?? 'Sin asignar' }}</p></div>
                         <div class="grid grid-cols-2 gap-3">
                             <div><p class="text-xs uppercase tracking-wide text-gray-400">Creado por</p><p class="break-words text-sm font-semibold text-gray-800">{{ $usuario->createdBy?->name ?? 'Sistema' }}</p></div>
                             <div><p class="text-xs uppercase tracking-wide text-gray-400">Registro</p><p class="text-sm font-semibold text-gray-800">{{ $resumen['registro']?->format('d/m/Y') }}</p></div>
                         </div>
                     </div>
 
+                    @unless($usuario->is(auth()->user()))
                     <div class="flex flex-col gap-3 border-t border-gray-100 pt-4 sm:flex-row">
                             @can('users.update')
                                 <a href="{{ route('admin.usuarios.edit', $usuario) }}" class="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-gray-700 sm:w-auto">Editar</a>
@@ -67,6 +64,7 @@
                                 @endcan
                             @endif
                     </div>
+                    @endunless
                 </div>
             </aside>
 
@@ -130,12 +128,26 @@
                 </div>
 
                 <div class="p-4 sm:p-5">
-                    <div class="mb-4"><h3 class="font-bold text-gray-800">Permisos individuales</h3><p class="text-xs text-gray-400">Acciones habilitadas específicamente para esta cuenta.</p></div>
-                    <div class="flex flex-wrap gap-2">
-                        @forelse($usuario->getDirectPermissions() as $permission)
-                            <span class="rounded-full bg-blue-50 px-3 py-1 text-xs font-medium text-blue-700">{{ $permission->name }}</span>
+                    <div class="mb-4 flex items-start justify-between gap-3">
+                        <div><h3 class="font-bold text-gray-800">Permisos del rol</h3><p class="text-xs text-gray-400">Acciones que este usuario puede realizar a través de su rol.</p></div>
+                        @if($role)
+                            @can('roles.update')
+                                <a href="{{ route('admin.roles.edit', $role) }}" class="shrink-0 rounded-lg border border-gray-200 px-3 py-1.5 text-xs font-medium text-gray-700 transition hover:bg-gray-50">Editar rol</a>
+                            @endcan
+                        @endif
+                    </div>
+                    <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+                        @forelse($rolePermissions as $group)
+                            <div class="rounded-lg border border-gray-200 p-3">
+                                <p class="mb-2 text-xs font-semibold uppercase tracking-wide text-gray-500">{{ $group['label'] }}</p>
+                                <div class="flex flex-wrap gap-1.5">
+                                    @foreach($group['permissions'] as $permission => $label)
+                                        <span class="rounded-full bg-blue-50 px-2.5 py-1 text-xs font-medium text-blue-700" title="{{ $permission }}">{{ $label }}</span>
+                                    @endforeach
+                                </div>
+                            </div>
                         @empty
-                            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">Sin permisos individuales</span>
+                            <span class="rounded-full bg-gray-100 px-3 py-1 text-xs font-medium text-gray-500">Su rol no tiene permisos asignados</span>
                         @endforelse
                     </div>
                 </div>

@@ -25,6 +25,7 @@
                 </p>
             </div>
 
+            @can('clients.create')
             <a
                 href="{{ route('admin.clientes.create') }}"
                 class="inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700"
@@ -37,6 +38,7 @@
                     Nuevo cliente
                 </span>
             </a>
+            @endcan
         </div>
 
         {{-- Estadísticas --}}
@@ -163,11 +165,14 @@
                                 title="Ver cliente" aria-label="Ver cliente">
                                 <x-heroicon-o-eye class="h-5 w-5" />
                             </a>
+                            @can('clients.update')
                             <a href="{{ route('admin.clientes.edit', $cliente) }}"
                                 class="inline-flex h-9 w-9 items-center justify-center rounded-lg text-yellow-600 transition hover:bg-yellow-50"
                                 title="Editar cliente" aria-label="Editar cliente">
                                 <x-heroicon-o-pencil-square class="h-5 w-5" />
                             </a>
+                            @endcan
+                            @can('clients.delete')
                             <form method="POST" action="{{ route('admin.clientes.destroy', $cliente) }}"
                                 onsubmit="return confirm('¿Eliminar cliente?');">
                                 @csrf
@@ -178,6 +183,7 @@
                                     <x-heroicon-o-trash class="h-5 w-5" />
                                 </button>
                             </form>
+                            @endcan
                         </div>
                     </article>
                 @empty
@@ -312,6 +318,7 @@
                                             <x-heroicon-o-eye class="h-4 w-4" />
                                         </a>
 
+                                        @can('clients.update')
                                         <a
                                             href="{{ route('admin.clientes.edit', $cliente) }}"
                                             class="inline-flex h-8 w-8 items-center justify-center rounded-lg text-yellow-600 transition hover:bg-yellow-50 hover:text-yellow-800"
@@ -320,7 +327,9 @@
                                         >
                                             <x-heroicon-o-pencil-square class="h-4 w-4" />
                                         </a>
+                                        @endcan
 
+                                        @can('clients.delete')
                                         <form
                                             method="POST"
                                             action="{{ route('admin.clientes.destroy', $cliente) }}"
@@ -337,6 +346,7 @@
                                                 <x-heroicon-o-trash class="h-4 w-4" />
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>
@@ -353,6 +363,7 @@
                                         <p class="mt-1 text-sm text-gray-400">
                                             Registra un cliente para comenzar.
                                         </p>
+                                        @can('clients.create')
                                         <a
                                             href="{{ route('admin.clientes.create') }}"
                                             class="mt-4 inline-flex items-center justify-center rounded-lg bg-gray-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-gray-700"
@@ -360,6 +371,7 @@
                                             <x-heroicon-o-plus class="mr-2 h-4 w-4" />
                                             Nuevo cliente
                                         </a>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

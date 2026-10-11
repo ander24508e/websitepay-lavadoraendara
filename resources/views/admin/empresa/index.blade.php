@@ -40,11 +40,13 @@
                     class="px-4 py-2.5 rounded-xl bg-gray-100 text-gray-700 font-medium text-sm hover:bg-gray-200 transition">
                     Cancelar
                 </a>
+                @can('company.update')
                 <button type="submit"
                     class="px-5 py-2.5 rounded-xl bg-gray-900 text-white font-medium text-sm hover:bg-gray-700 transition flex items-center gap-2">
                     <x-heroicon-o-check class="w-4 h-4" />
                     Guardar Cambios
                 </button>
+                @endcan
             </div>
         </div>
 
@@ -75,7 +77,7 @@
                     @error('logo')
                         <p class="text-red-500 text-xs mt-2 text-center">{{ $message }}</p>
                     @enderror
-                    @if ($empresa->logo)
+                    @if ($empresa->logo && auth()->user()->can('company.update'))
                         <button type="button" onclick="document.getElementById('delete-logo-form').submit()"
                             class="mt-4 w-full text-red-500 hover:text-red-700 text-sm font-medium py-2.5 rounded-xl hover:bg-red-50 transition flex items-center justify-center gap-2">
                             <x-heroicon-o-trash class="w-4 h-4" />

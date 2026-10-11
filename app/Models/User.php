@@ -20,7 +20,6 @@ class User extends Authenticatable
         'foto_perfil',
         'active',
         'created_by',
-        'manager_id',
     ];
 
     protected $hidden = [
@@ -44,34 +43,42 @@ class User extends Authenticatable
     }
 
     // Helpers de rol
-    public function isAdmin(): bool
-    {
-        return $this->isOwner();
-    }
-
     public function isOwner(): bool
     {
         return $this->is_owner === true;
     }
 
+    /**
+     * Personal interno: el propietario o cualquier usuario con un rol activo
+     * distinto de cliente. Los roles se crean desde el modulo Roles.
+     */
     public function isStaff(): bool
     {
-        return $this->hasAnyRole(['admin', 'gerente', 'empleado']);
+        if ($this->isOwner()) {
+            return true;
+        }
+
+        $role = $this->staffRole();
+
+        return $role !== null && $role->active;
+    }
+
+    public function isClient(): bool
+    {
+        return $this->hasRole(Role::CLIENT);
+    }
+
+    /**
+     * Rol interno del usuario (cada usuario tiene un solo rol).
+     */
+    public function staffRole(): ?Role
+    {
+        return $this->roles->first(fn ($role) => $role->name !== Role::CLIENT);
     }
 
     public function createdBy()
     {
         return $this->belongsTo(self::class, 'created_by');
-    }
-
-    public function manager()
-    {
-        return $this->belongsTo(self::class, 'manager_id');
-    }
-
-    public function managedStaff()
-    {
-        return $this->hasMany(self::class, 'manager_id');
     }
 
     public function audits()

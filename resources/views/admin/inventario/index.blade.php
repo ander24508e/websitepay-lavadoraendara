@@ -5,25 +5,27 @@
 @section('content')
     @php
         $hasProductTypes = $productTypes->isNotEmpty();
-        $primaryProductUrl = $hasProductTypes
+        $authUser = auth()->user();
+        $primaryProductUrl = $hasProductTypes && $authUser->can('catalog.products.create')
             ? route(
                 'admin.catalog-items.create',
                 array_filter(['inventory' => 1, 'catalog_type_id' => $selectedTypeId ?: null]),
             )
             : null;
-        $newMovementUrl = $hasProductTypes ? route('admin.inventario.create') : null;
+        $newMovementUrl = $hasProductTypes && $authUser->can('inventory.move') ? route('admin.inventario.create') : null;
         $moreActions = $hasProductTypes
             ? [
-                ['route' => route('admin.inventario.locations'), 'title' => 'Ubicaciones', 'icon' => 'building-storefront'],
-                ['route' => route('admin.inventario.suppliers'), 'title' => 'Proveedores', 'icon' => 'users'],
-                ['route' => route('admin.inventario.purchases'), 'title' => 'Compras', 'icon' => 'shopping-bag'],
-                ['route' => route('admin.inventario.transfers'), 'title' => 'Transferencias', 'icon' => 'arrows-right-left'],
-                ['route' => route('admin.inventario.returns'), 'title' => 'Devoluciones', 'icon' => 'arrow-path-rounded-square'],
-                ['route' => route('admin.inventario.counts'), 'title' => 'Conteo físico', 'icon' => 'clipboard-document-check'],
-                ['route' => route('admin.inventario.reports'), 'title' => 'Reportes', 'icon' => 'chart-bar'],
-                ['route' => route('admin.inventario.periods'), 'title' => 'Cierres', 'icon' => 'lock-closed'],
-                ['route' => route('admin.inventario.import'), 'title' => 'Importar CSV', 'icon' => 'arrow-up-tray'],
+                ['can' => 'inventory.locations.view', 'route' => route('admin.inventario.locations'), 'title' => 'Ubicaciones', 'icon' => 'building-storefront'],
+                ['can' => 'inventory.suppliers.view', 'route' => route('admin.inventario.suppliers'), 'title' => 'Proveedores', 'icon' => 'users'],
+                ['can' => 'inventory.purchases.view', 'route' => route('admin.inventario.purchases'), 'title' => 'Compras', 'icon' => 'shopping-bag'],
+                ['can' => 'inventory.transfers.view', 'route' => route('admin.inventario.transfers'), 'title' => 'Transferencias', 'icon' => 'arrows-right-left'],
+                ['can' => 'inventory.returns.view', 'route' => route('admin.inventario.returns'), 'title' => 'Devoluciones', 'icon' => 'arrow-path-rounded-square'],
+                ['can' => 'inventory.counts.view', 'route' => route('admin.inventario.counts'), 'title' => 'Conteo físico', 'icon' => 'clipboard-document-check'],
+                ['can' => 'inventory.reports.view', 'route' => route('admin.inventario.reports'), 'title' => 'Reportes', 'icon' => 'chart-bar'],
+                ['can' => 'inventory.periods.view', 'route' => route('admin.inventario.periods'), 'title' => 'Cierres', 'icon' => 'lock-closed'],
+                ['can' => 'inventory.import', 'route' => route('admin.inventario.import'), 'title' => 'Importar CSV', 'icon' => 'arrow-up-tray'],
                 [
+                    'can' => 'inventory.export',
                     'route' => route(
                         'admin.inventario.export',
                         array_filter(['catalog_type_id' => $selectedTypeId ?: null]),
@@ -33,6 +35,7 @@
                 ],
             ]
             : [];
+        $moreActions = array_values(array_filter($moreActions, fn ($tool) => $authUser->can($tool['can'])));
         $panelClass = 'bg-white rounded-lg border border-gray-200/70 shadow-sm overflow-hidden min-w-0';
     @endphp
 

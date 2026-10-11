@@ -18,11 +18,14 @@
             </div>
 
             <div class="flex flex-wrap gap-2">
+                @can('vehicles.update')
                 <a href="{{ route('admin.vehiculos.edit', $vehiculo) }}"
                     class="inline-flex items-center justify-center w-10 h-10 rounded-lg bg-gray-900 text-white hover:bg-gray-700 transition"
                     title="Editar vehiculo" aria-label="Editar vehiculo">
                     <x-heroicon-o-pencil-square class="w-5 h-5" />
                 </a>
+                @endcan
+                @can('vehicles.delete')
                 <form method="POST" action="{{ route('admin.vehiculos.destroy', $vehiculo) }}" onsubmit="return confirm('¿Eliminar vehiculo?');">
                     @csrf
                     @method('DELETE')
@@ -31,6 +34,7 @@
                         <x-heroicon-o-trash class="w-5 h-5" />
                     </button>
                 </form>
+                @endcan
             </div>
         </div>
 

@@ -6,6 +6,7 @@ use App\Helpers\NotificationHelper;
 use App\Models\CatalogCategory;
 use App\Models\CatalogType;
 use App\Models\Empresa;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -19,7 +20,10 @@ class CatalogCategoryController extends Controller
         $selectedTypeId = (int) $request->query('catalog_type_id', 0);
         $selectedStatus = (string) $request->query('status', '');
         $selectedType = null;
-        $baseQuery = CatalogCategory::query()->where('empresa_id', $empresa->id);
+        $visibleModels = CatalogPermission::visibleBusinessModels();
+        $baseQuery = CatalogCategory::query()
+            ->where('empresa_id', $empresa->id)
+            ->whereHas('type', fn ($typeQuery) => $typeQuery->whereIn('business_model', $visibleModels));
 
         if ($selectedTypeId > 0) {
             $selectedType = CatalogType::query()
@@ -55,11 +59,12 @@ class CatalogCategoryController extends Controller
             'total' => (clone $baseQuery)->count(),
             'active' => (clone $baseQuery)->where('active', true)->count(),
             'with_items' => (clone $baseQuery)->has('items')->count(),
-            'types' => CatalogType::query()->where('empresa_id', $empresa->id)->count(),
+            'types' => CatalogType::query()->where('empresa_id', $empresa->id)->whereIn('business_model', $visibleModels)->count(),
         ];
 
         $types = CatalogType::query()
             ->where('empresa_id', $empresa->id)
+            ->whereIn('business_model', $visibleModels)
             ->ordered()
             ->get(['id', 'name']);
 
@@ -68,11 +73,13 @@ class CatalogCategoryController extends Controller
 
     public function create(Request $request)
     {
+        CatalogPermission::authorizeAny('create');
         $empresa = $this->getOrCreateEmpresa();
         $selectedTypeId = (int) $request->query('catalog_type_id', old('catalog_type_id', 0));
         $selectedType = null;
         $types = CatalogType::query()
             ->where('empresa_id', $empresa->id)
+            ->whereIn('business_model', $this->businessModelsFor('create'))
             ->ordered()
             ->get();
 
@@ -108,6 +115,8 @@ class CatalogCategoryController extends Controller
             ->where('empresa_id', $empresa->id)
             ->findOrFail($data['catalog_type_id']);
 
+        CatalogPermission::authorize($type->business_model, 'create');
+
         $slug = $this->resolveSlug($type->id, $data['name'], $data['slug'] ?? null);
 
         $category = CatalogCategory::create([
@@ -135,8 +144,11 @@ class CatalogCategoryController extends Controller
 
     public function edit(CatalogCategory $catalogCategory)
     {
+        CatalogPermission::authorize($catalogCategory->type?->business_model, 'update');
+
         $types = CatalogType::query()
             ->where('empresa_id', $catalogCategory->empresa_id)
+            ->whereIn('business_model', $this->businessModelsFor('update'))
             ->ordered()
             ->get();
 
@@ -156,6 +168,9 @@ class CatalogCategoryController extends Controller
         $type = CatalogType::query()
             ->where('empresa_id', $catalogCategory->empresa_id)
             ->findOrFail($data['catalog_type_id']);
+
+        CatalogPermission::authorize($catalogCategory->type?->business_model, 'update');
+        CatalogPermission::authorize($type->business_model, 'update');
 
         $slug = $this->resolveSlug($type->id, $data['name'], $data['slug'] ?? null, $catalogCategory->id);
 
@@ -178,6 +193,7 @@ class CatalogCategoryController extends Controller
 
     public function destroy(Request $request, CatalogCategory $catalogCategory)
     {
+        CatalogPermission::authorize($catalogCategory->type?->business_model, 'delete');
         $catalogTypeId = $catalogCategory->catalog_type_id;
 
         try {
@@ -199,6 +215,17 @@ class CatalogCategoryController extends Controller
         }
 
         return redirect()->route('admin.catalog-categories.index');
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function businessModelsFor(string $action): array
+    {
+        return array_values(array_filter(
+            [CatalogType::BUSINESS_MODEL_PRODUCTS, CatalogType::BUSINESS_MODEL_SERVICES],
+            fn (string $model) => CatalogPermission::allows($model, $action)
+        ));
     }
 
     private function getOrCreateEmpresa(): Empresa

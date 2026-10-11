@@ -801,8 +801,12 @@ class OrderController extends Controller
 
     private function workers(): \Illuminate\Support\Collection
     {
+        // Personal activo: propietario o usuarios con un rol interno activo
         return User::query()
-            ->whereHas('roles', fn (Builder $query) => $query->whereIn('name', ['admin', 'empleado']))
+            ->where('active', true)
+            ->where(fn (Builder $query) => $query
+                ->where('is_owner', true)
+                ->orWhereHas('roles', fn (Builder $roles) => $roles->where('is_system', false)->where('active', true)))
             ->orderBy('name', 'asc')
             ->get(['id', 'name']);
     }

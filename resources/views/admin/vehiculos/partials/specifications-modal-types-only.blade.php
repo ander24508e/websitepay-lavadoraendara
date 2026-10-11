@@ -24,6 +24,7 @@
                     <h4 class="font-bold text-gray-800">Nuevo tipo de vehículo</h4>
                     <p class="mt-1 text-xs text-gray-400">Define clases como sedán, SUV o camioneta.</p>
                 </div>
+                @can('vehicles.specifications.create')
                 <form method="POST" action="{{ route('admin.vehiculos.specifications.types.store') }}" class="space-y-4 p-4">
                     @csrf
                     <input type="text" name="name"
@@ -41,6 +42,7 @@
                         Crear tipo
                     </button>
                 </form>
+                @endcan
             </section>
         </div>
     </div>

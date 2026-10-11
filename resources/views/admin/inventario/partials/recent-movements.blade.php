@@ -34,11 +34,14 @@
                         <p class="text-xs text-gray-500 break-words">{{ $movement->variant->name ?? '-' }}</p>
                     </div>
                     <div class="flex gap-1 shrink-0">
+                        @can('inventory.update')
                         <a href="{{ route('admin.inventario.movements.edit', $movement) }}"
                             class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-gray-700 hover:bg-gray-100 transition"
                             title="Editar movimiento" aria-label="Editar movimiento">
                             <x-heroicon-o-pencil-square class="w-4 h-4" />
                         </a>
+                        @endcan
+                        @can('inventory.void')
                         <form method="POST" action="{{ route('admin.inventario.movements.destroy', $movement) }}"
                             onsubmit="return confirm('¿Anular este movimiento y registrar una reversa?');">
                             @csrf
@@ -49,6 +52,7 @@
                                 <x-heroicon-o-trash class="w-4 h-4" />
                             </button>
                         </form>
+                        @endcan
                     </div>
                 </div>
                 <p class="text-xs mt-2 text-gray-500 {{ $movement->voided_at ? 'line-through text-gray-400' : '' }}">

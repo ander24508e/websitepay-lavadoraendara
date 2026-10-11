@@ -21,6 +21,12 @@
     <!-- Overlay para sidebar mÃ³vil -->
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
 
+    @php
+        $adminUser = auth()->user();
+        $adminInventoryRoute = \App\Support\Permissions\AdminHome::inventoryRoute($adminUser);
+        $adminVehiclesRoute = \App\Support\Permissions\AdminHome::vehiclesRoute($adminUser);
+        $adminStaffRoute = \App\Support\Permissions\AdminHome::staffRoute($adminUser);
+    @endphp
     <!-- Sidebar (Colapsable al hacer clic) -->
     <aside class="sidebar flex flex-col h-full" id="sidebar">
         <div class="sidebar-header">
@@ -74,27 +80,27 @@
             <p class="px-3 pt-4 pb-2 text-[11px] uppercase tracking-wider text-slate-400/80 font-semibold">Activos
                 Operacionales</p>
 
-            @can('catalog.view')
+            @canany(['catalog.products.view', 'catalog.services.view'])
                 <a href="{{ route('admin.catalog.index') }}"
                     class="{{ request()->routeIs('admin.catalog.*') || request()->routeIs('admin.catalog-types.*') || request()->routeIs('admin.catalog-categories.*') || request()->routeIs('admin.catalog-items.*') || request()->routeIs('admin.catalog-variants.*') || request()->routeIs('admin.catalog-service-prices.*') || request()->routeIs('admin.catalog.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-squares-2x2 class="w-5 h-5" /></span>
                     <span>Catálogo</span>
                 </a>
-            @endcan
-            @can('inventory.view')
-                <a href="{{ route('admin.inventario.index') }}"
+            @endcanany
+            @if($adminInventoryRoute)
+                <a href="{{ route($adminInventoryRoute) }}"
                     class="{{ request()->routeIs('admin.inventario.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-archive-box class="w-5 h-5" /></span>
                     <span>Inventario</span>
                 </a>
-            @endcan
-            @can('vehicles.view')
-                <a href="{{ route('admin.vehiculos.index') }}"
+            @endif
+            @if($adminVehiclesRoute)
+                <a href="{{ route($adminVehiclesRoute) }}"
                     class="{{ request()->routeIs('admin.vehiculos.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-truck class="w-5 h-5" /></span>
                     <span>Vehiculos</span>
                 </a>
-            @endcan
+            @endif
 
             <p class="px-4 pt-4 pb-2 text-[11px] uppercase tracking-wider text-slate-400/80 font-semibold">
                 Administracion</p>
@@ -107,13 +113,13 @@
                 </a>
             @endcan
 
-            @canany(['users.view', 'users.create_employees', 'users.create_managers'])
-                <a href="{{ auth()->user()->can('users.view') ? route('admin.usuarios.index') : route('admin.usuarios.create') }}"
-                    class="{{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}">
+            @if($adminStaffRoute)
+                <a href="{{ route($adminStaffRoute) }}"
+                    class="{{ request()->routeIs('admin.usuarios.*') || request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-user-group class="w-5 h-5" /></span>
                     <span>Usuarios</span>
                 </a>
-            @endcanany
+            @endif
 
         </nav>
 
@@ -219,28 +225,28 @@
             <p class="px-3 pt-4 pb-2 text-[11px] uppercase tracking-wider text-slate-400/80 font-semibold">Activos
                 Operacionales</p>
 
-            @can('catalog.view')
+            @canany(['catalog.products.view', 'catalog.services.view'])
                 <a href="{{ route('admin.catalog.index') }}"
                     class="{{ request()->routeIs('admin.catalog.*') || request()->routeIs('admin.catalog-types.*') || request()->routeIs('admin.catalog-categories.*') || request()->routeIs('admin.catalog-items.*') || request()->routeIs('admin.catalog-variants.*') || request()->routeIs('admin.catalog-service-prices.*') || request()->routeIs('admin.catalog.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-squares-2x2 class="w-5 h-5" /></span>
                     <span>Catálogo</span>
                 </a>
-            @endcan
+            @endcanany
 
-            @can('inventory.view')
-                <a href="{{ route('admin.inventario.index') }}"
+            @if($adminInventoryRoute)
+                <a href="{{ route($adminInventoryRoute) }}"
                     class="{{ request()->routeIs('admin.inventario.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-archive-box class="w-5 h-5" /></span>
                     <span>Inventario</span>
                 </a>
-            @endcan
-            @can('vehicles.view')
-                <a href="{{ route('admin.vehiculos.index') }}"
+            @endif
+            @if($adminVehiclesRoute)
+                <a href="{{ route($adminVehiclesRoute) }}"
                     class="{{ request()->routeIs('admin.vehiculos.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-truck class="w-5 h-5" /></span>
                     <span>Vehiculos</span>
                 </a>
-            @endcan
+            @endif
 
             <p class="px-3 pt-4 pb-2 text-[11px] uppercase tracking-wider text-slate-400/80 font-semibold">
                 Administracion</p>
@@ -252,13 +258,13 @@
                 </a>
             @endcan
 
-            @canany(['users.view', 'users.create_employees', 'users.create_managers'])
-                <a href="{{ auth()->user()->can('users.view') ? route('admin.usuarios.index') : route('admin.usuarios.create') }}"
-                    class="{{ request()->routeIs('admin.usuarios.*') ? 'active' : '' }}">
+            @if($adminStaffRoute)
+                <a href="{{ route($adminStaffRoute) }}"
+                    class="{{ request()->routeIs('admin.usuarios.*') || request()->routeIs('admin.roles.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-user-group class="w-5 h-5" /></span>
                     <span>Usuarios</span>
                 </a>
-            @endcanany
+            @endif
         </nav>
 
         <div class="bottom-sheet-footer">

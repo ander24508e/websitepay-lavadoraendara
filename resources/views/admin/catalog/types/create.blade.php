@@ -5,7 +5,7 @@
 @section('content')
 @php
     $catalogType = null;
-    $selectedBusinessModel = old('business_model', request('business_model', 'services'));
+    $selectedBusinessModel = old('business_model', request('business_model', \App\Support\Permissions\CatalogPermission::allows('services', 'create') ? 'services' : 'products'));
 @endphp
 
 <div class="mx-auto w-full max-w-full overflow-x-hidden px-2 pb-4 sm:px-4 xl:px-6">

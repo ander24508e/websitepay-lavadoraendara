@@ -8,6 +8,7 @@ use App\Models\CatalogItem;
 use App\Models\CatalogType;
 use App\Models\Empresa;
 use App\Models\ServiceVehicleTypePrice;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
@@ -80,6 +81,7 @@ class ServiceForm extends Component
 
     public function save(): void
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_SERVICES, $this->catalogItemId ? 'update' : 'create');
         $this->selectedCategoryId = $this->selectedCategoryId ?: null;
         $data = $this->validate($this->serviceRules());
         $empresa = $this->getOrCreateEmpresa();

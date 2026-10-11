@@ -12,6 +12,7 @@ use App\Models\VehicleBrand;
 use App\Models\VehicleModel;
 use App\Models\VehicleSpecification;
 use App\Models\VehicleType;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,7 @@ class ServiceVehicleTypePriceController extends Controller
 {
     public function create(Request $request, CatalogItem $catalogItem)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_SERVICES, 'update');
         $service = $this->serviceItem($catalogItem);
         $serviceVehicleTypePrice = null;
         $vehicleSpecifications = $this->vehicleSpecifications();
@@ -45,6 +47,7 @@ class ServiceVehicleTypePriceController extends Controller
 
     public function store(Request $request, CatalogItem $catalogItem)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_SERVICES, 'update');
         $service = $this->serviceItem($catalogItem);
         $data = $this->validatedData($request);
         $vehicleSpecification = $this->resolveVehicleSpecification($data);
@@ -91,6 +94,7 @@ class ServiceVehicleTypePriceController extends Controller
 
     public function edit(Request $request, ServiceVehicleTypePrice $serviceVehicleTypePrice)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_SERVICES, 'update');
         $serviceVehicleTypePrice->load([
             'service.type',
             'service.category',
@@ -124,6 +128,7 @@ class ServiceVehicleTypePriceController extends Controller
 
     public function update(Request $request, ServiceVehicleTypePrice $serviceVehicleTypePrice)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_SERVICES, 'update');
         $serviceVehicleTypePrice->load('service.type');
         $service = $this->serviceItem($serviceVehicleTypePrice->service);
         $data = $this->validatedData($request);
@@ -148,6 +153,7 @@ class ServiceVehicleTypePriceController extends Controller
 
     public function destroy(ServiceVehicleTypePrice $serviceVehicleTypePrice)
     {
+        CatalogPermission::authorize(CatalogType::BUSINESS_MODEL_SERVICES, 'update');
         $serviceVehicleTypePrice->load('service.type');
         $service = $this->serviceItem($serviceVehicleTypePrice->service);
         $serviceVehicleTypePrice->delete();

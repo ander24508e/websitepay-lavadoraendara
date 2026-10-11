@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Helpers\NotificationHelper;
 use App\Models\CatalogType;
 use App\Models\Empresa;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,7 @@ class CatalogTypeController extends Controller
 
     public function create()
     {
+        CatalogPermission::authorizeAny('create');
         $empresa = $this->getOrCreateEmpresa();
 
         return view('admin.catalog.types.create', compact('empresa'));
@@ -38,6 +40,8 @@ class CatalogTypeController extends Controller
             'active' => ['nullable', 'boolean'],
         ]);
 
+        CatalogPermission::authorize($data['business_model'], 'create');
+
         $slug = $this->resolveSlug($empresa->id, $data['name'], $data['slug'] ?? null);
 
         $catalogType = CatalogType::create([
@@ -56,6 +60,7 @@ class CatalogTypeController extends Controller
 
     public function show(CatalogType $catalogType)
     {
+        CatalogPermission::authorize($catalogType->business_model, 'view');
         $catalogType->loadCount('items');
 
         return view('admin.catalog.types.show', compact('catalogType'));
@@ -63,6 +68,7 @@ class CatalogTypeController extends Controller
 
     public function edit(CatalogType $catalogType)
     {
+        CatalogPermission::authorize($catalogType->business_model, 'update');
         return view('admin.catalog.types.edit', compact('catalogType'));
     }
 
@@ -78,6 +84,9 @@ class CatalogTypeController extends Controller
             ])],
             'active' => ['nullable', 'boolean'],
         ]);
+
+        CatalogPermission::authorize($catalogType->business_model, 'update');
+        CatalogPermission::authorize($data['business_model'], 'update');
 
         $slug = $this->resolveSlug($catalogType->empresa_id, $data['name'], $data['slug'] ?? null, $catalogType->id);
 
@@ -96,6 +105,7 @@ class CatalogTypeController extends Controller
 
     public function destroy(CatalogType $catalogType)
     {
+        CatalogPermission::authorize($catalogType->business_model, 'delete');
         $catalogType->delete();
 
         NotificationHelper::success('Tipo de catalogo eliminado correctamente.');

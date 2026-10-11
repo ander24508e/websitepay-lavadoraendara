@@ -96,10 +96,13 @@
                     </div>
 
                     <div class="catalog-item-detail-buttons">
+                        @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'update'))
                         <a href="{{ route('admin.catalog-items.edit', ['catalogItem' => $catalogItem, ...$returnContext]) }}"
                             class="w-full rounded-lg bg-gray-900 px-5 py-2.5 text-center text-sm font-medium text-white transition hover:bg-gray-700">
                             Editar
                         </a>
+                        @endif
+                        @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'delete'))
                         <form action="{{ route('admin.catalog-items.destroy', $catalogItem) }}" method="POST"
                             onsubmit="return confirm('¿Eliminar este producto o servicio?')">
                             @csrf
@@ -109,6 +112,7 @@
                                 Eliminar
                             </button>
                         </form>
+                        @endif
                     </div>
                 </div>
             </aside>
@@ -136,10 +140,12 @@
                         </div>
                     </div>
 
+                    @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'update'))
                     <a href="{{ $addConfigUrl }}"
                         class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-gray-700">
                         + {{ $isServiceContext ? 'Precio por vehiculo' : 'Nueva Presentacion' }}
                     </a>
+                    @endif
                 </div>
 
                 @if ($configItems->isEmpty())
@@ -150,10 +156,12 @@
                         <p class="mb-5 text-sm">
                             Agrega el primero para completar su informacion.
                         </p>
+                        @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'update'))
                         <a href="{{ $addConfigUrl }}"
                             class="inline-flex shrink-0 items-center justify-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-center text-sm font-medium text-white transition hover:bg-gray-700">
                             + {{ $isServiceContext ? 'Precio por vehiculo' : 'Nueva Presentacion' }}
                         </a>
+                        @endif
                     </div>
                 @else
                     <div class="catalog-business-items-scroll">
@@ -168,10 +176,13 @@
                                                 <p>{{ $configItem->description ?: 'Sin descripcion' }}</p>
                                             </div>
                                             <div class="catalog-business-item-actions">
+                                                @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'update'))
                                                 <a href="{{ route('admin.catalog-service-prices.edit', $configItem) }}"
                                                     title="Editar precio" aria-label="Editar precio">
                                                     <x-heroicon-o-pencil-square class="h-4 w-4" />
                                                 </a>
+                                                @endif
+                                                @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'update'))
                                                 <form method="POST"
                                                     action="{{ route('admin.catalog-service-prices.destroy', $configItem) }}"
                                                     onsubmit="return confirm('¿Eliminar este precio por vehiculo?');">
@@ -181,6 +192,7 @@
                                                         <x-heroicon-o-trash class="h-4 w-4" />
                                                     </button>
                                                 </form>
+                                                @endif
                                             </div>
                                         </div>
 
@@ -209,10 +221,12 @@
                                                 <p>{{ $configItem->sku ?: 'Sin codigo interno' }}</p>
                                             </div>
                                             <div class="catalog-business-item-actions">
+                                                @if(\App\Support\Permissions\CatalogPermission::allows($catalogItem->type?->business_model, 'update'))
                                                 <a href="{{ route('admin.catalog-variants.edit', ['catalogVariant' => $configItem, 'redirect_to_item' => 1]) }}"
                                                     title="Editar presentacion" aria-label="Editar presentacion">
                                                     <x-heroicon-o-pencil-square class="h-4 w-4" />
                                                 </a>
+                                                @endif
                                             </div>
                                         </div>
 

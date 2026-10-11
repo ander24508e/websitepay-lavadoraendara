@@ -4,12 +4,10 @@ namespace Tests\Feature;
 
 use App\Models\Empresa;
 use App\Models\LandingBanner;
+use App\Models\Role;
 use App\Models\User;
 use Database\Seeders\RoleSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
-use Spatie\Permission\PermissionRegistrar;
 use Tests\TestCase;
 
 class BannerAuthorizationTest extends TestCase
@@ -29,9 +27,7 @@ class BannerAuthorizationTest extends TestCase
     public function test_owner_has_absolute_access_without_permission_assignments(): void
     {
         $owner = User::query()->where('is_owner', true)->firstOrFail();
-        Role::findByName('admin')->syncPermissions([]);
-        app(PermissionRegistrar::class)->forgetCachedPermissions();
-        $owner->refresh();
+        $this->assertCount(0, $owner->getAllPermissions());
 
         $banner = $this->banner();
 
@@ -142,11 +138,11 @@ class BannerAuthorizationTest extends TestCase
         $this->actingAs($user)->delete(route('admin.banners.destroy', $banner))->assertForbidden();
     }
 
-    public function test_user_permission_form_lists_the_four_banner_operations(): void
+    public function test_role_permission_form_lists_the_four_banner_operations(): void
     {
         $owner = User::query()->where('is_owner', true)->firstOrFail();
 
-        $this->actingAs($owner)->get(route('admin.usuarios.create'))
+        $this->actingAs($owner)->get(route('admin.roles.create'))
             ->assertOk()
             ->assertSee('Ver banners')
             ->assertSee('Crear banners')
@@ -187,38 +183,13 @@ class BannerAuthorizationTest extends TestCase
             ->assertViewIs('admin.banners.create');
     }
 
-    public function test_legacy_manage_assignments_are_migrated_to_all_mutation_permissions(): void
-    {
-        $legacy = Permission::create(['name' => 'banners.manage', 'guard_name' => 'web']);
-        $directUser = $this->staffWith();
-        $directUser->givePermissionTo($legacy);
-        $role = Role::findByName('gerente');
-        $role->givePermissionTo($legacy);
-
-        $migration = require database_path('migrations/2026_08_28_000100_split_banner_permissions.php');
-        $migration->up();
-
-        $this->assertDatabaseMissing('permissions', ['name' => 'banners.manage']);
-        $this->assertTrue($directUser->fresh()->hasAllPermissions([
-            'banners.create',
-            'banners.update',
-            'banners.delete',
-        ]));
-        $this->assertTrue($role->fresh()->hasAllPermissions([
-            'banners.create',
-            'banners.update',
-            'banners.delete',
-        ]));
-    }
-
     private function staffWith(string ...$permissions): User
     {
-        $user = User::factory()->create();
-        $user->assignRole('empleado');
+        $role = Role::create(['name' => 'Rol prueba '.uniqid(), 'guard_name' => 'web']);
+        $role->syncPermissions($permissions);
 
-        if ($permissions !== []) {
-            $user->givePermissionTo($permissions);
-        }
+        $user = User::factory()->create();
+        $user->assignRole($role);
 
         return $user;
     }

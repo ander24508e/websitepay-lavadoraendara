@@ -2,10 +2,11 @@
 
 namespace Database\Seeders;
 
+use App\Models\Role;
 use App\Models\User;
+use App\Support\Permissions\PermissionCatalog;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RoleSeeder extends Seeder
@@ -14,60 +15,24 @@ class RoleSeeder extends Seeder
     {
         app()[PermissionRegistrar::class]->forgetCachedPermissions();
 
-        $adminRole = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'gerente', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'empleado', 'guard_name' => 'web']);
-        Role::firstOrCreate(['name' => 'cliente', 'guard_name' => 'web']);
-
-        $permissions = [
-            'dashboard.view',
-            'users.view',
-            'users.create_employees',
-            'users.create_managers',
-            'users.update',
-            'users.deactivate',
-            'users.manage_permissions',
-            'sales.view',
-            'sales.create',
-            'sales.update',
-            'sales.delete',
-            'sales.collect',
-            'transactions.view',
-            'orders.view',
-            'orders.update',
-            'orders.delete',
-            'clients.view',
-            'clients.manage',
-            'vehicles.view',
-            'vehicles.manage',
-            'catalog.view',
-            'catalog.manage',
-            'inventory.view',
-            'inventory.move',
-            'inventory.void',
-            'inventory.view_costs',
-            'inventory.export',
-            'inventory.close_periods',
-            'company.view',
-            'company.manage',
-            'banners.view',
-            'banners.create',
-            'banners.update',
-            'banners.delete',
-        ];
+        // Sincroniza la tabla permissions con config/permissions_catalog.php.
+        $permissions = PermissionCatalog::names();
 
         foreach ($permissions as $permission) {
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        $adminRole->syncPermissions($permissions);
+        Permission::query()
+            ->where('guard_name', 'web')
+            ->whereNotIn('name', $permissions)
+            ->delete();
 
-        // Los permisos de gerente y empleado pueden estar personalizados en
-        // producción. Crear los roles arriba es suficiente; no se deben borrar
-        // sus asignaciones al volver a sincronizar el catálogo de permisos.
+        // Unico rol del sistema. Los roles del personal se crean desde el modulo Roles.
+        Role::client()->forceFill(['is_system' => true, 'active' => true])->save();
 
+        // El propietario tiene acceso total por Gate::before; no necesita rol.
         $ownerEmail = (string) config('auth.owner_email', 'admin@endara.com');
-        $admin = User::firstOrCreate(
+        $owner = User::firstOrCreate(
             ['email' => $ownerEmail],
             [
                 'name' => 'Administrador',
@@ -76,23 +41,18 @@ class RoleSeeder extends Seeder
                 'active' => true,
             ]
         );
+
         User::query()
             ->where('is_owner', true)
-            ->whereKeyNot($admin->id)
+            ->whereKeyNot($owner->id)
             ->update(['is_owner' => false]);
 
-        $admin->forceFill([
+        $owner->forceFill([
             'active' => true,
             'is_owner' => true,
             'created_by' => null,
-            'manager_id' => null,
         ])->save();
-        $admin->syncRoles(['admin']);
-
-        User::role('admin')
-            ->whereKeyNot($admin->id)
-            ->get()
-            ->each(fn (User $user) => $user->removeRole('admin'));
+        $owner->syncRoles([]);
 
         $client = User::firstOrCreate(
             ['email' => 'cliente@test.com'],
@@ -103,8 +63,10 @@ class RoleSeeder extends Seeder
                 'active' => true,
             ]
         );
-        $client->syncRoles(['cliente']);
+        $client->syncRoles([Role::CLIENT]);
 
-        $this->command?->info('Roles y permisos de personal sincronizados.');
+        app()[PermissionRegistrar::class]->forgetCachedPermissions();
+
+        $this->command?->info('Catalogo de permisos sincronizado ('.count($permissions).' permisos).');
     }
 }

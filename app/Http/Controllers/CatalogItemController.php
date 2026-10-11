@@ -10,6 +10,7 @@ use App\Models\CatalogItemVariant;
 use App\Models\CatalogType;
 use App\Models\Empresa;
 use App\Models\VehicleType;
+use App\Support\Permissions\CatalogPermission;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -55,6 +56,13 @@ class CatalogItemController extends Controller
             $selectedCategoryId = 0;
             $selectedCategory = null;
         }
+
+        CatalogPermission::authorize(
+            $fromInventory || ($selectedType && $this->isProductBusiness($selectedType))
+                ? CatalogType::BUSINESS_MODEL_PRODUCTS
+                : CatalogType::BUSINESS_MODEL_SERVICES,
+            'create'
+        );
 
         $restrictToSelectedType = $selectedType && !$fromInventory;
 
@@ -141,6 +149,8 @@ class CatalogItemController extends Controller
             ->where('empresa_id', $empresa->id)
             ->findOrFail($data['catalog_type_id']);
 
+        CatalogPermission::authorize($type->business_model, 'create');
+
         if ($request->boolean('redirect_to_inventory') && !$this->isProductBusiness($type)) {
             NotificationHelper::error('Inventario solo permite crear productos de negocios tipo producto.');
             return redirect()->back()->withInput();
@@ -218,6 +228,7 @@ class CatalogItemController extends Controller
 
     public function show(Request $request, CatalogItem $catalogItem)
     {
+        CatalogPermission::authorize($catalogItem->type?->business_model, 'view');
         $catalogItem->load([
             'type',
             'category',
@@ -237,6 +248,7 @@ class CatalogItemController extends Controller
 
     public function edit(Request $request, CatalogItem $catalogItem)
     {
+        CatalogPermission::authorize($catalogItem->type?->business_model, 'update');
         $types = CatalogType::query()
             ->where('empresa_id', $catalogItem->empresa_id)
             ->ordered()
@@ -305,6 +317,9 @@ class CatalogItemController extends Controller
         $type = CatalogType::query()
             ->where('empresa_id', $catalogItem->empresa_id)
             ->findOrFail($data['catalog_type_id']);
+
+        CatalogPermission::authorize($catalogItem->type?->business_model, 'update');
+        CatalogPermission::authorize($type->business_model, 'update');
 
         $category = $this->resolveCategory($catalogItem->empresa_id, $type->id, $data['catalog_category_id'] ?? null);
 
@@ -375,6 +390,7 @@ class CatalogItemController extends Controller
 
     public function destroy(Request $request, CatalogItem $catalogItem)
     {
+        CatalogPermission::authorize($catalogItem->type?->business_model, 'delete');
         $catalogTypeId = $catalogItem->catalog_type_id;
         $image = $catalogItem->image;
 

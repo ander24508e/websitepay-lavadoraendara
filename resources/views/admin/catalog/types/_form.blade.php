@@ -13,6 +13,8 @@
         <div>
             <label class="block text-sm font-medium text-gray-700 mb-2">Modelo del negocio *</label>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                @php($typeAction = $catalogType ? 'update' : 'create')
+                @if(\App\Support\Permissions\CatalogPermission::allows('services', $typeAction))
                 <label class="flex gap-3 rounded-xl border border-gray-200 p-4 cursor-pointer hover:border-gray-400 transition">
                     <input type="radio" name="business_model" value="services"
                         class="mt-1 text-gray-900 focus:ring-gray-400"
@@ -22,6 +24,8 @@
                         <span class="block text-xs text-gray-500 mt-1">Para reservas, trabajos o atencion sin stock directo.</span>
                     </span>
                 </label>
+                @endif
+                @if(\App\Support\Permissions\CatalogPermission::allows('products', $typeAction))
                 <label class="flex gap-3 rounded-xl border border-gray-200 p-4 cursor-pointer hover:border-gray-400 transition">
                     <input type="radio" name="business_model" value="products"
                         class="mt-1 text-gray-900 focus:ring-gray-400"
@@ -31,6 +35,7 @@
                         <span class="block text-xs text-gray-500 mt-1">Para articulos fisicos que podran manejar stock e inventario.</span>
                     </span>
                 </label>
+                @endif
             </div>
             @error('business_model')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>

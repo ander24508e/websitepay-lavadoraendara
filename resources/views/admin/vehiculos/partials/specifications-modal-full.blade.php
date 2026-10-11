@@ -25,6 +25,7 @@
                         <h4 class="font-bold text-gray-800">Marcas</h4>
                         <p class="mt-1 text-xs text-gray-400">Registra marcas reutilizables.</p>
                     </div>
+                    @can('vehicles.specifications.create')
                     <form method="POST" action="{{ route('admin.vehiculos.specifications.brands.store') }}"
                         class="space-y-4 p-4">
                         @csrf
@@ -43,6 +44,7 @@
                             </button>
                         </div>
                     </form>
+                    @endcan
                 </section>
 
                 <section class="rounded-xl border border-gray-100 bg-white shadow-sm">
@@ -50,6 +52,7 @@
                         <h4 class="font-bold text-gray-800">Modelos</h4>
                         <p class="mt-1 text-xs text-gray-400">Relaciona cada modelo con una marca.</p>
                     </div>
+                    @can('vehicles.specifications.create')
                     <form method="POST" action="{{ route('admin.vehiculos.specifications.models.store') }}"
                         class="space-y-4 p-4">
                         @csrf
@@ -75,6 +78,7 @@
                             </button>
                         </div>
                     </form>
+                    @endcan
                 </section>
 
                 <section class="rounded-xl border border-gray-100 bg-white shadow-sm">
@@ -82,6 +86,7 @@
                         <h4 class="font-bold text-gray-800">Tipos de vehículo</h4>
                         <p class="mt-1 text-xs text-gray-400">Define clases como sedán, SUV o camioneta.</p>
                     </div>
+                    @can('vehicles.specifications.create')
                     <form method="POST" action="{{ route('admin.vehiculos.specifications.types.store') }}"
                         class="space-y-4 p-4">
                         @csrf
@@ -100,6 +105,7 @@
                             Crear tipo
                         </button>
                     </form>
+                    @endcan
                 </section>
             </div>
         </div>

@@ -18,16 +18,20 @@
             </div>
 
             <div class="flex items-center gap-2">
+                @can('vehicles.specifications.view')
                 <a href="{{ route('admin.vehiculos.specifications.index') }}"
                     class="inline-flex items-center justify-center bg-white border border-gray-200 text-gray-700 w-11 h-11 rounded-lg hover:bg-gray-50 transition"
                     title="Especificaciones de vehiculos" aria-label="Especificaciones de vehiculos">
                     <x-heroicon-o-adjustments-horizontal class="w-5 h-5" />
                 </a>
+                @endcan
+                @can('vehicles.create')
                 <a href="{{ route('admin.vehiculos.create') }}"
                     class="inline-flex items-center justify-center bg-gray-900 text-white w-11 h-11 rounded-lg hover:bg-gray-700 transition"
                     title="Nuevo vehiculo" aria-label="Nuevo vehiculo">
                     <x-heroicon-o-plus class="w-5 h-5" />
                 </a>
+                @endcan
             </div>
         </div>
 
@@ -134,11 +138,14 @@
                                 title="Ver vehiculo" aria-label="Ver vehiculo">
                                 <x-heroicon-o-eye class="w-5 h-5" />
                             </a>
+                            @can('vehicles.update')
                             <a href="{{ route('admin.vehiculos.edit', $vehicle) }}"
                                 class="inline-flex items-center justify-center w-9 h-9 rounded-lg text-yellow-600 hover:bg-yellow-50 transition"
                                 title="Editar vehiculo" aria-label="Editar vehiculo">
                                 <x-heroicon-o-pencil-square class="w-5 h-5" />
                             </a>
+                            @endcan
+                            @can('vehicles.delete')
                             <form method="POST" action="{{ route('admin.vehiculos.destroy', $vehicle) }}" onsubmit="return confirm('¿Eliminar vehiculo?');">
                                 @csrf
                                 @method('DELETE')
@@ -148,6 +155,7 @@
                                     <x-heroicon-o-trash class="w-5 h-5" />
                                 </button>
                             </form>
+                            @endcan
                         </div>
                     </article>
                 @empty
@@ -194,11 +202,14 @@
                                             title="Ver vehiculo" aria-label="Ver vehiculo">
                                             <x-heroicon-o-eye class="w-4 h-4" />
                                         </a>
+                                        @can('vehicles.update')
                                         <a href="{{ route('admin.vehiculos.edit', $vehicle) }}"
                                             class="inline-flex items-center justify-center w-8 h-8 rounded-lg text-yellow-600 hover:bg-yellow-50 transition"
                                             title="Editar vehiculo" aria-label="Editar vehiculo">
                                             <x-heroicon-o-pencil-square class="w-4 h-4" />
                                         </a>
+                                        @endcan
+                                        @can('vehicles.delete')
                                         <form method="POST" action="{{ route('admin.vehiculos.destroy', $vehicle) }}" onsubmit="return confirm('¿Eliminar vehiculo?');">
                                             @csrf
                                             @method('DELETE')
@@ -208,6 +219,7 @@
                                                 <x-heroicon-o-trash class="w-4 h-4" />
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>

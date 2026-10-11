@@ -12,6 +12,7 @@
         <a href="{{ route('admin.inventario.index') }}" class="bg-gray-100 text-gray-700 px-4 py-2 rounded-lg text-sm font-semibold">Volver</a>
     </div>
 
+    @can('inventory.counts.create')
     <form method="POST" action="{{ route('admin.inventario.counts.store') }}" class="bg-white rounded-xl border border-gray-100 shadow-sm p-5 space-y-5">
         @csrf
         <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -62,6 +63,7 @@
 
         <button class="bg-gray-900 text-white px-5 py-2.5 rounded-lg text-sm font-semibold">Registrar conteo</button>
     </form>
+    @endcan
 
     <div class="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
         <table class="w-full text-sm">

@@ -32,10 +32,12 @@
         </div>
 
         <div class="flex flex-col items-stretch gap-2 shrink-0 sm:flex-row sm:items-center">
+            @if(\App\Support\Permissions\CatalogPermission::allows($isProductBusiness ? 'products' : 'services', 'create'))
             <a href="{{ route('admin.catalog-items.create', ['catalog_type_id' => $catalogTypeId, 'return_to_type' => 1]) }}"
                 class="{{ $primaryButtonClass }}">
                 + Agregar {{ $itemSingularTitle }}
             </a>
+            @endif
         </div>
     </div>
 
@@ -75,21 +77,28 @@
                                     title="Ver {{ $itemSingular }}" aria-label="Ver {{ $itemSingular }}">
                                     <x-heroicon-o-eye class="w-4 h-4" />
                                 </a>
+                                @if(\App\Support\Permissions\CatalogPermission::allows($isProductBusiness ? 'products' : 'services', 'update'))
                                 <a href="{{ route('admin.catalog-items.edit', ['catalogItem' => $item, 'return_to_type' => 1]) }}"
                                     title="Editar {{ $itemSingular }}" aria-label="Editar {{ $itemSingular }}">
                                     <x-heroicon-o-pencil-square class="w-4 h-4" />
                                 </a>
+                                @endif
                                 @if ($isProductBusiness)
+                                    @if(\App\Support\Permissions\CatalogPermission::allows($isProductBusiness ? 'products' : 'services', 'update'))
                                     <a href="{{ route('admin.catalog-variants.create', ['catalog_item_id' => $item->id, 'catalog_type_id' => $catalogTypeId, 'return_to_type' => 1]) }}"
                                         title="Agregar presentación" aria-label="Agregar presentación">
                                         <x-heroicon-o-rectangle-stack class="w-4 h-4" />
                                     </a>
+                                    @endif
                                 @else
+                                    @if(\App\Support\Permissions\CatalogPermission::allows($isProductBusiness ? 'products' : 'services', 'update'))
                                     <a href="{{ route('admin.catalog-service-prices.create', ['catalogItem' => $item->id, 'catalog_type_id' => $catalogTypeId, 'return_to_type' => 1]) }}"
                                         title="Precios por vehículos" aria-label="Precios por vehículos">
                                         <x-heroicon-o-banknotes class="w-4 h-4" />
                                     </a>
+                                    @endif
                                 @endif
+                                @if(\App\Support\Permissions\CatalogPermission::allows($isProductBusiness ? 'products' : 'services', 'delete'))
                                 <form method="POST" action="{{ route('admin.catalog-items.destroy', $item) }}"
                                     onsubmit="return confirm('¿Eliminar este {{ $itemSingular }}? Esta acción no se puede deshacer.');">
                                     @csrf
@@ -100,6 +109,7 @@
                                         <x-heroicon-o-trash class="w-4 h-4" />
                                     </button>
                                 </form>
+                                @endif
                             </div>
                         </div>
 

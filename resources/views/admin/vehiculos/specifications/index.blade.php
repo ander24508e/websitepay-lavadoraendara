@@ -59,6 +59,7 @@
                         </div>
                         <div class="flex items-center justify-end gap-2">
                             <span class="text-xs text-gray-400">{{ $specification->vehicles_count }} vehículos</span>
+                            @can('vehicles.specifications.delete')
                             <form method="POST" action="{{ route('admin.vehiculos.specifications.destroy', $specification) }}"
                                 onsubmit="return confirm('¿Eliminar esta especificación?');">
                                 @csrf
@@ -68,6 +69,7 @@
                                     <x-heroicon-o-trash class="h-5 w-5" />
                                 </button>
                             </form>
+                            @endcan
                         </div>
                     </article>
                 @empty
@@ -103,6 +105,7 @@
                                 <td class="px-4 py-3 text-center font-semibold text-gray-700">{{ $specification->vehicles_count }}</td>
                                 <td class="px-4 py-3">
                                     <div class="flex items-center justify-center">
+                                        @can('vehicles.specifications.delete')
                                         <form method="POST" action="{{ route('admin.vehiculos.specifications.destroy', $specification) }}"
                                             onsubmit="return confirm('¿Eliminar esta especificación?');">
                                             @csrf
@@ -112,6 +115,7 @@
                                                 <x-heroicon-o-trash class="h-4 w-4" />
                                             </button>
                                         </form>
+                                        @endcan
                                     </div>
                                 </td>
                             </tr>
@@ -139,6 +143,7 @@
                     </button>
                 </div>
 
+                @can('vehicles.specifications.create')
                 <form method="POST" action="{{ route('admin.vehiculos.specifications.store') }}" class="min-h-0 flex-1 overflow-y-auto p-5">
                     @include('admin.vehiculos.specifications._form-fields', ['prefix' => 'modal'])
 
@@ -152,6 +157,7 @@
                         </button>
                     </div>
                 </form>
+                @endcan
             </div>
         </div>
     </div>

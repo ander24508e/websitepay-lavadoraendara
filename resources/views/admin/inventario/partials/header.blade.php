@@ -13,12 +13,15 @@
 
         @if ($hasProductTypes)
             <div class="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center sm:justify-end">
+                @if ($newMovementUrl)
                 <a href="{{ $newMovementUrl }}"
                     class="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-4 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50">
                     <x-heroicon-o-archive-box class="h-5 w-5" />
                     Movimiento
                 </a>
+                @endif
 
+                @if (count($moreActions) > 0)
                 <details class="relative">
                     <summary
                         class="inline-flex h-11 cursor-pointer list-none items-center justify-center gap-2 rounded-lg border border-gray-200 bg-white px-3 text-sm font-semibold text-gray-700 shadow-sm transition hover:bg-gray-50 [&::-webkit-details-marker]:hidden"
@@ -78,12 +81,15 @@
                         @endforeach
                     </div>
                 </details>
+                @endif
 
+                @if ($primaryProductUrl)
                 <a href="{{ $primaryProductUrl }}"
                     class="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-gray-900 px-5 text-sm font-semibold text-white shadow-sm transition hover:bg-gray-700">
                     <x-heroicon-o-plus class="h-5 w-5" />
                     Agregar producto
                 </a>
+                @endif
             </div>
         @endif
     </div>
