@@ -3,7 +3,7 @@
     <div class="relative w-full max-w-md bg-white rounded-lg shadow-xl overflow-hidden max-h-[92vh] overflow-y-auto">
         <div class="px-5 py-4 border-b border-gray-100 flex items-start justify-between gap-4">
             <div class="min-w-0">
-                <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold">Gestionar stock</p>
+                <p class="text-xs uppercase tracking-wide text-gray-400 font-semibold">Mover stock</p>
                 <h3 id="stockModalProduct" class="text-lg font-bold text-gray-900 truncate">Producto</h3>
                 <p id="stockModalVariant" class="text-sm text-gray-500 truncate">Presentación</p>
             </div>
@@ -33,16 +33,18 @@
                 </select>
             </div>
 
-            <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
-                <select name="inventory_location_id"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
-                    <option value="">Ubicación principal automática</option>
-                    @foreach ($locations as $location)
-                        <option value="{{ $location->id }}">{{ $location->name }}</option>
-                    @endforeach
-                </select>
-            </div>
+            @if ($locations->count() > 1)
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Ubicación</label>
+                    <select name="inventory_location_id"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        <option value="">Ubicación principal automática</option>
+                        @foreach ($locations as $location)
+                            <option value="{{ $location->id }}">{{ $location->name }}</option>
+                        @endforeach
+                    </select>
+                </div>
+            @endif
 
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
@@ -58,41 +60,40 @@
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
-                    <input type="text" name="reason" maxlength="255"
-                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                        placeholder="Ej: compra, conteo">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Referencia</label>
-                    <input type="text" name="reference" maxlength="255"
-                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                        placeholder="Ej: factura #001">
-                </div>
-            </div>
-
-            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Lote</label>
-                    <input type="text" name="batch_number" maxlength="255"
-                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                        placeholder="Opcional">
-                </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Vencimiento</label>
-                    <input type="date" name="expires_at"
-                        class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
-                </div>
-            </div>
-
             <div>
-                <label class="block text-sm font-medium text-gray-700 mb-1">Nota opcional</label>
-                <input type="text" name="notes" maxlength="1000"
-                    class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
-                    placeholder="Detalle del movimiento">
+                <label class="block text-sm font-medium text-gray-700 mb-1">Motivo</label>
+                <input type="text" name="reason" maxlength="255" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                    placeholder="Ej: compra, conteo, daño">
             </div>
+
+            <details class="rounded-lg border border-gray-200">
+                <summary class="cursor-pointer select-none px-3 py-2.5 text-sm font-medium text-gray-700">
+                    Más detalles
+                    <span class="text-xs font-normal text-gray-400">(referencia, lote, vencimiento, nota)</span>
+                </summary>
+                <div class="space-y-3 border-t border-gray-200 p-3">
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Referencia</label>
+                        <input type="text" name="reference" maxlength="255" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                            placeholder="Ej: factura #001">
+                    </div>
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Lote</label>
+                            <input type="text" name="batch_number" maxlength="255" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Vencimiento</label>
+                            <input type="date" name="expires_at" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        </div>
+                    </div>
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-1">Nota</label>
+                        <input type="text" name="notes" maxlength="1000" class="w-full border border-gray-200 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300"
+                            placeholder="Detalle del movimiento">
+                    </div>
+                </div>
+            </details>
 
             <div class="flex flex-col sm:flex-row justify-end gap-2 pt-2">
                 <button type="button"

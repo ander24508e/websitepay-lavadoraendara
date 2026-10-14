@@ -13,7 +13,9 @@ return [
     |
     */
 
-    'owner_email' => env('OWNER_EMAIL', 'admin@endara.com'),
+    'owner_name' => env('OWNER_NAME', env('ADMIN_NAME', 'Administrador')),
+    'owner_email' => env('OWNER_EMAIL', env('ADMIN_EMAIL', 'admin@endara.com')),
+    'owner_password' => env('OWNER_PASSWORD', env('ADMIN_PASSWORD', 'Admin123')),
 
     /*
     |--------------------------------------------------------------------------

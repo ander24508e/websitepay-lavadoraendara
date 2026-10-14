@@ -9,7 +9,7 @@
 @section('content')
     @php
         $fromInventory = $fromInventory ?? false;
-        $selectedProductTypeId = (int) old('catalog_type_id', $selectedTypeId ?: ($types->first()?->id ?? 0));
+        $selectedProductTypeId = (int) old('catalog_type_id', $selectedTypeId ?: ($types->count() === 1 ? $types->first()->id : 0));
         $returnToCategory = $returnToCategory ?? false;
         $inventoryReturnUrl = $fromInventory
             ? route('admin.inventario.index', array_filter(['catalog_type_id' => $selectedProductTypeId ?: null]))

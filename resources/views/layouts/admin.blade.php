@@ -88,11 +88,7 @@
                 </a>
             @endcanany
             @if($adminInventoryRoute)
-                <a href="{{ route($adminInventoryRoute) }}"
-                    class="{{ request()->routeIs('admin.inventario.*') ? 'active' : '' }}">
-                    <span><x-heroicon-o-archive-box class="w-5 h-5" /></span>
-                    <span>Inventario</span>
-                </a>
+                @include('partials.admin-inventory-nav', ['inventoryRoute' => $adminInventoryRoute, 'variant' => 'sidebar'])
             @endif
             @if($adminVehiclesRoute)
                 <a href="{{ route($adminVehiclesRoute) }}"
@@ -110,6 +106,14 @@
                     class="{{ request()->routeIs('admin.clientes.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-users class="w-5 h-5" /></span>
                     <span>Clientes</span>
+                </a>
+            @endcan
+
+            @can('inventory.suppliers.view')
+                <a href="{{ route('admin.inventario.suppliers') }}"
+                    class="{{ request()->routeIs('admin.inventario.suppliers*') ? 'active' : '' }}">
+                    <span><x-heroicon-o-building-office-2 class="w-5 h-5" /></span>
+                    <span>Proveedores</span>
                 </a>
             @endcan
 
@@ -234,11 +238,7 @@
             @endcanany
 
             @if($adminInventoryRoute)
-                <a href="{{ route($adminInventoryRoute) }}"
-                    class="{{ request()->routeIs('admin.inventario.*') ? 'active' : '' }}">
-                    <span><x-heroicon-o-archive-box class="w-5 h-5" /></span>
-                    <span>Inventario</span>
-                </a>
+                @include('partials.admin-inventory-nav', ['inventoryRoute' => $adminInventoryRoute, 'variant' => 'sheet'])
             @endif
             @if($adminVehiclesRoute)
                 <a href="{{ route($adminVehiclesRoute) }}"
@@ -255,6 +255,14 @@
                     class="{{ request()->routeIs('admin.clientes.*') ? 'active' : '' }}">
                     <span><x-heroicon-o-users class="w-5 h-5" /></span>
                     <span>Clientes</span>
+                </a>
+            @endcan
+
+            @can('inventory.suppliers.view')
+                <a href="{{ route('admin.inventario.suppliers') }}"
+                    class="{{ request()->routeIs('admin.inventario.suppliers*') ? 'active' : '' }}">
+                    <span><x-heroicon-o-building-office-2 class="w-5 h-5" /></span>
+                    <span>Proveedores</span>
                 </a>
             @endcan
 
@@ -321,7 +329,7 @@
             el.addEventListener('click', (e) => {
                 clickOnLink = true;
                 // En mÃ³vil, cerrar sidebar despuÃ©s del clic
-                if (window.innerWidth < 768) {
+                if (window.innerWidth < 768 && !el.matches('[data-nav-toggle]')) {
                     closeMobileSidebar();
                 }
                 // Dejar que el enlace haga su trabajo
@@ -342,6 +350,7 @@
                 }
 
                 // Colapsar/expandir
+                closeSidebarFlyouts();
                 sidebar.classList.toggle('collapsed');
                 const collapsed = sidebar.classList.contains('collapsed');
                 localStorage.setItem('sidebarCollapsed', collapsed);
@@ -353,6 +362,79 @@
             '#sidebar a, #sidebar button, #sidebar .sidebar-header, #sidebar details, #sidebar summary').forEach(el => {
             el.addEventListener('click', (e) => {
                 e.stopPropagation();
+            });
+        });
+
+        // ========== PANELES FLOTANTES DEL SIDEBAR (DESKTOP) ==========
+        // Inventario flota encima de los items (como Configuracion). Usa position: fixed para
+        // no generar scroll en el sidebar; abre hacia arriba si no cabe hacia abajo.
+        const sidebarDropdowns = sidebar ? sidebar.querySelectorAll('details.sidebar-flyout, details.sidebar-settings') : [];
+
+        function resetFlyoutPanel(panel) {
+            ['position', 'top', 'left', 'width'].forEach(prop => panel.style.removeProperty(prop));
+        }
+
+        function placeFlyout(details) {
+            const panel = details.querySelector('.sidebar-flyout-panel');
+            if (!panel) return;
+
+            resetFlyoutPanel(panel);
+            if (!details.open || window.innerWidth < 768) return;
+
+            const gap = 6;
+            const margin = 8;
+            const trigger = details.querySelector('summary').getBoundingClientRect();
+            const isCollapsed = sidebar.classList.contains('collapsed');
+
+            panel.style.position = 'fixed';
+            panel.style.width = isCollapsed ? '190px' : `${trigger.width}px`;
+            panel.style.left = isCollapsed ? `${trigger.right + gap}px` : `${trigger.left}px`;
+
+            const height = panel.offsetHeight;
+            let top;
+
+            if (isCollapsed) {
+                top = Math.min(trigger.top, window.innerHeight - height - margin);
+            } else if (trigger.bottom + gap + height <= window.innerHeight - margin) {
+                top = trigger.bottom + gap;
+            } else {
+                top = trigger.top - gap - height;
+            }
+
+            panel.style.top = `${Math.max(margin, top)}px`;
+        }
+
+        function closeSidebarFlyouts() {
+            sidebar?.querySelectorAll('details.sidebar-flyout[open]').forEach(details => {
+                details.open = false;
+            });
+        }
+
+        sidebarDropdowns.forEach(details => {
+            details.addEventListener('toggle', () => {
+                if (details.open) {
+                    // Solo un panel abierto a la vez
+                    sidebarDropdowns.forEach(other => {
+                        if (other !== details) other.open = false;
+                    });
+                }
+                placeFlyout(details);
+            });
+        });
+
+        sidebar?.addEventListener('scroll', closeSidebarFlyouts);
+        window.addEventListener('resize', () => {
+            sidebar?.querySelectorAll('details.sidebar-flyout[open]').forEach(placeFlyout);
+        });
+
+        // Dropdown en linea del bottom sheet movil (Inventario)
+        document.querySelectorAll('[data-nav-toggle]').forEach(toggle => {
+            toggle.addEventListener('click', (e) => {
+                e.preventDefault();
+                const subnav = toggle.nextElementSibling;
+                if (!subnav) return;
+                subnav.hidden = !subnav.hidden;
+                toggle.setAttribute('aria-expanded', subnav.hidden ? 'false' : 'true');
             });
         });
 
@@ -399,7 +481,7 @@
         document.querySelectorAll('.bottom-sheet-nav a, .bottom-sheet-footer button, .bottom-sheet-footer a').forEach(
             el => {
                 el.addEventListener('click', () => {
-                    if (window.innerWidth < 768) {
+                    if (window.innerWidth < 768 && !el.matches('[data-nav-toggle]')) {
                         closeBottomSheet();
                     }
                 });

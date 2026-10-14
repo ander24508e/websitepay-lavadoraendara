@@ -16,12 +16,6 @@
         $moreActions = $hasProductTypes
             ? [
                 ['can' => 'inventory.locations.view', 'route' => route('admin.inventario.locations'), 'title' => 'Ubicaciones', 'icon' => 'building-storefront'],
-                ['can' => 'inventory.suppliers.view', 'route' => route('admin.inventario.suppliers'), 'title' => 'Proveedores', 'icon' => 'users'],
-                ['can' => 'inventory.purchases.view', 'route' => route('admin.inventario.purchases'), 'title' => 'Compras', 'icon' => 'shopping-bag'],
-                ['can' => 'inventory.transfers.view', 'route' => route('admin.inventario.transfers'), 'title' => 'Transferencias', 'icon' => 'arrows-right-left'],
-                ['can' => 'inventory.returns.view', 'route' => route('admin.inventario.returns'), 'title' => 'Devoluciones', 'icon' => 'arrow-path-rounded-square'],
-                ['can' => 'inventory.counts.view', 'route' => route('admin.inventario.counts'), 'title' => 'Conteo físico', 'icon' => 'clipboard-document-check'],
-                ['can' => 'inventory.reports.view', 'route' => route('admin.inventario.reports'), 'title' => 'Reportes', 'icon' => 'chart-bar'],
                 ['can' => 'inventory.periods.view', 'route' => route('admin.inventario.periods'), 'title' => 'Cierres', 'icon' => 'lock-closed'],
                 ['can' => 'inventory.import', 'route' => route('admin.inventario.import'), 'title' => 'Importar CSV', 'icon' => 'arrow-up-tray'],
                 [
@@ -48,7 +42,7 @@
             @include('admin.inventario.partials.business-tabs')
             @include('admin.inventario.partials.stats')
 
-            <div class="grid grid-cols-1 2xl:grid-cols-[minmax(0,1fr)_380px] gap-5 xl:gap-6">
+            <div class="grid grid-cols-1 xl:grid-cols-[minmax(0,1fr)_320px] gap-5">
                 @include('admin.inventario.partials.products-table')
                 @include('admin.inventario.partials.recent-movements')
             </div>

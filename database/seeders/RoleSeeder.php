@@ -6,6 +6,7 @@ use App\Models\Role;
 use App\Models\User;
 use App\Support\Permissions\PermissionCatalog;
 use Illuminate\Database\Seeder;
+use RuntimeException;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
@@ -31,12 +32,23 @@ class RoleSeeder extends Seeder
         Role::client()->forceFill(['is_system' => true, 'active' => true])->save();
 
         // El propietario tiene acceso total por Gate::before; no necesita rol.
-        $ownerEmail = (string) config('auth.owner_email', 'admin@endara.com');
+        $ownerName = trim((string) config('auth.owner_name', 'Administrador')) ?: 'Administrador';
+        $ownerEmail = trim((string) config('auth.owner_email', 'admin@endara.com')) ?: 'admin@endara.com';
+        $ownerPassword = (string) config('auth.owner_password', '');
+
+        if (app()->environment('production') && (trim($ownerPassword) === '' || $ownerPassword === 'Admin123')) {
+            throw new RuntimeException('Configura OWNER_PASSWORD o ADMIN_PASSWORD antes de ejecutar seeders en produccion.');
+        }
+
+        if (trim($ownerPassword) === '') {
+            $ownerPassword = 'Admin123';
+        }
+
         $owner = User::firstOrCreate(
             ['email' => $ownerEmail],
             [
-                'name' => 'Administrador',
-                'password' => bcrypt('Admin123'),
+                'name' => $ownerName,
+                'password' => bcrypt($ownerPassword),
                 'email_verified_at' => now(),
                 'active' => true,
             ]

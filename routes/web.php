@@ -226,7 +226,8 @@ Route::middleware(['auth', 'active', 'staff'])
 
         // Inventario
         Route::get('/inventario', [InventarioController::class, 'index'])->middleware('permission:inventory.view')->name('inventario.index');
-        Route::get('/inventario/exportar', [InventarioController::class, 'export'])->middleware('permission:inventory.export')->name('inventario.export');
+        Route::get('/inventario/movimientos', [InventarioController::class, 'movements'])->middleware('permission:inventory.view')->name('inventario.movements');
+        Route::get('/inventario/exportar',[InventarioController::class, 'export'])->middleware('permission:inventory.export')->name('inventario.export');
         Route::get('/inventario/importar', [InventarioController::class, 'import'])->middleware('permission:inventory.import')->name('inventario.import');
         Route::post('/inventario/importar/preview', [InventarioController::class, 'previewImport'])->middleware('permission:inventory.import')->name('inventario.import.preview');
         Route::post('/inventario/importar', [InventarioController::class, 'storeImport'])->middleware('permission:inventory.import')->name('inventario.import.store');

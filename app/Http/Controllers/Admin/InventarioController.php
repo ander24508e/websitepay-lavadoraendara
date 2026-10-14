@@ -23,9 +23,6 @@ class InventarioController extends Controller
         $empresa = $this->getOrCreateEmpresa();
         $q = trim((string) $request->query('q', ''));
         $selectedTypeId = (int) $request->query('catalog_type_id', 0);
-        $movementType = trim((string) $request->query('movement_type', ''));
-        $movementDateFrom = trim((string) $request->query('movement_date_from', ''));
-        $movementDateTo = trim((string) $request->query('movement_date_to', ''));
         $canViewCosts = $this->canInventory('inventory.view_costs');
 
         $productTypes = CatalogType::query()
@@ -80,7 +77,7 @@ class InventarioController extends Controller
                     });
             });
 
-        $statsVariants = (clone $inventoryStatsQuery)->with('locationStocks')->get();
+        $statsVariants = (clone $inventoryStatsQuery)->get(['id', 'stock', 'cost_price']);
 
         $inventoryStats = [
             'variants' => $statsVariants->count(),
@@ -94,39 +91,12 @@ class InventarioController extends Controller
                 ->whereColumn('stock', '<=', 'min_stock')
                 ->where('min_stock', '>', 0)
                 ->count(),
-            'no_cost' => (clone $inventoryStatsQuery)
-                ->where(function ($query) {
-                    $query->whereNull('cost_price')->orWhere('cost_price', '<=', 0);
-                })
-                ->count(),
-            'missing_sku' => (clone $inventoryStatsQuery)
-                ->where(function ($query) {
-                    $query->whereNull('sku')->orWhere('sku', '');
-                })
-                ->count(),
-            'mismatches' => $statsVariants->filter(function ($variant) {
-                return $variant->locationStocks->isNotEmpty()
-                    && (int) $variant->locationStocks->sum('quantity') !== (int) ($variant->stock ?? 0);
-            })->count(),
         ];
 
-        $recentMovements = InventoryMovement::query()
-            ->with(['variant.item.type', 'user', 'location', 'fromLocation', 'toLocation'])
-            ->whereHas('variant.item', function ($itemQuery) use ($empresa, $selectedTypeId) {
-                $itemQuery->where('empresa_id', $empresa->id)
-                    ->whereHas('type', function ($typeQuery) use ($selectedTypeId) {
-                        $typeQuery->where('business_model', CatalogType::BUSINESS_MODEL_PRODUCTS)
-                            ->when($selectedTypeId > 0, function ($filteredTypeQuery) use ($selectedTypeId) {
-                                $filteredTypeQuery->whereKey($selectedTypeId);
-                            });
-                    });
-            })
-            ->when(in_array($movementType, ['in', 'out', 'adjust'], true), fn ($query) => $query->where('type', $movementType))
-            ->when($movementDateFrom !== '', fn ($query) => $query->whereDate('created_at', '>=', $movementDateFrom))
-            ->when($movementDateTo !== '', fn ($query) => $query->whereDate('created_at', '<=', $movementDateTo))
+        $recentMovements = $this->movementsQuery($empresa, $selectedTypeId)
             ->latest()
-            ->paginate(20, ['*'], 'movements_page')
-            ->withQueryString();
+            ->limit(10)
+            ->get();
 
         $selectedType = $productTypes->firstWhere('id', $selectedTypeId);
         $locations = $this->activeLocations($empresa);
@@ -138,11 +108,56 @@ class InventarioController extends Controller
             'selectedTypeId',
             'selectedType',
             'inventoryStats',
-            'movementType',
-            'movementDateFrom',
-            'movementDateTo',
             'locations',
             'canViewCosts'
+        ));
+    }
+
+    public function movements(Request $request)
+    {
+        $empresa = $this->getOrCreateEmpresa();
+        $q = trim((string) $request->query('q', ''));
+        $selectedTypeId = (int) $request->query('catalog_type_id', 0);
+        $movementType = trim((string) $request->query('movement_type', ''));
+        $movementDateFrom = trim((string) $request->query('movement_date_from', ''));
+        $movementDateTo = trim((string) $request->query('movement_date_to', ''));
+
+        $productTypes = CatalogType::query()
+            ->where('empresa_id', $empresa->id)
+            ->where('business_model', CatalogType::BUSINESS_MODEL_PRODUCTS)
+            ->ordered()
+            ->get();
+
+        if ($selectedTypeId > 0 && ! $productTypes->contains('id', $selectedTypeId)) {
+            $selectedTypeId = 0;
+        }
+
+        $movements = $this->movementsQuery($empresa, $selectedTypeId)
+            ->when($q !== '', function ($query) use ($q) {
+                $query->where(function ($subQuery) use ($q) {
+                    $subQuery->where('reason', 'like', "%{$q}%")
+                        ->orWhere('reference', 'like', "%{$q}%")
+                        ->orWhereHas('variant', function ($variantQuery) use ($q) {
+                            $variantQuery->where('name', 'like', "%{$q}%")
+                                ->orWhere('sku', 'like', "%{$q}%")
+                                ->orWhereHas('item', fn ($itemQuery) => $itemQuery->where('name', 'like', "%{$q}%"));
+                        });
+                });
+            })
+            ->when(in_array($movementType, ['in', 'out', 'adjust'], true), fn ($query) => $query->where('type', $movementType))
+            ->when($movementDateFrom !== '', fn ($query) => $query->whereDate('created_at', '>=', $movementDateFrom))
+            ->when($movementDateTo !== '', fn ($query) => $query->whereDate('created_at', '<=', $movementDateTo))
+            ->latest()
+            ->paginate(25)
+            ->withQueryString();
+
+        return view('admin.inventario.movements', compact(
+            'movements',
+            'productTypes',
+            'selectedTypeId',
+            'movementType',
+            'movementDateFrom',
+            'movementDateTo'
         ));
     }
 
@@ -330,6 +345,12 @@ class InventarioController extends Controller
 
         $variant = $this->resolveInventoryVariant($data['catalog_item_variant_id'] ?? null, $data['catalog_item_id'] ?? null);
 
+        if (! $variant) {
+            NotificationHelper::error('Este producto aun no tiene una presentacion. Crea una presentacion antes de registrar inventario.');
+
+            return redirect()->back();
+        }
+
         if (
             ! $variant->item
             || ($variant->item->type?->business_model !== CatalogType::BUSINESS_MODEL_PRODUCTS)
@@ -419,7 +440,7 @@ class InventarioController extends Controller
         return redirect()->route('admin.inventario.index');
     }
 
-    private function resolveInventoryVariant(?int $variantId, ?int $itemId): CatalogItemVariant
+    private function resolveInventoryVariant(?int $variantId, ?int $itemId): ?CatalogItemVariant
     {
         $empresa = $this->getOrCreateEmpresa();
 
@@ -452,15 +473,20 @@ class InventarioController extends Controller
             return $variant;
         }
 
-        return CatalogItemVariant::create([
-            'catalog_item_id' => $item->id,
-            'name' => 'General',
-            'price' => $item->base_price,
-            'stock' => 0,
-            'min_stock' => 0,
-            'active' => true,
-            'is_default' => true,
-        ])->load('item.type');
+        return null;
+    }
+
+    private function movementsQuery(Empresa $empresa, int $selectedTypeId)
+    {
+        return InventoryMovement::query()
+            ->with(['variant.item.type', 'user', 'location', 'fromLocation', 'toLocation'])
+            ->whereHas('variant.item', function ($itemQuery) use ($empresa, $selectedTypeId) {
+                $itemQuery->where('empresa_id', $empresa->id)
+                    ->whereHas('type', function ($typeQuery) use ($selectedTypeId) {
+                        $typeQuery->where('business_model', CatalogType::BUSINESS_MODEL_PRODUCTS)
+                            ->when($selectedTypeId > 0, fn ($filteredTypeQuery) => $filteredTypeQuery->whereKey($selectedTypeId));
+                    });
+            });
     }
 
     private function getOrCreateEmpresa(): Empresa

@@ -169,20 +169,29 @@
                             <div class="flex min-w-0 flex-col">
                                 <div class="mb-1 flex min-h-8 items-center">
                                     <label
-                                        for="selectedTypeName"
+                                        for="selectedTypeId"
                                         class="block text-xs font-semibold text-gray-700"
                                     >
-                                        Negocio
+                                        Negocio *
                                     </label>
                                 </div>
 
-                                <input
-                                    id="selectedTypeName"
-                                    type="text"
-                                    value="{{ $selectedType?->name }}"
-                                    class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:ring-2 focus:ring-gray-300 @error('selectedTypeId') border-red-400 bg-red-50 @enderror"
-                                    readonly
+                                <select
+                                    id="selectedTypeId"
+                                    wire:model.live="selectedTypeId"
+                                    class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:ring-2 focus:ring-gray-300 disabled:cursor-not-allowed disabled:opacity-70 @error('selectedTypeId') border-red-400 bg-red-50 @enderror"
+                                    @disabled($isEditing)
                                 >
+                                    @unless ($selectedTypeId)
+                                        <option value="0">Selecciona un negocio</option>
+                                    @endunless
+
+                                    @foreach ($types as $type)
+                                        <option value="{{ $type->id }}">
+                                            {{ $type->name }}
+                                        </option>
+                                    @endforeach
+                                </select>
 
                                 @error('selectedTypeId')
                                     <p class="mt-1 text-xs text-red-500">
@@ -204,7 +213,8 @@
                                     <button
                                         type="button"
                                         wire:click="openCategoryModal"
-                                        class="inline-flex h-8 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-gray-100 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-200"
+                                        class="inline-flex h-8 shrink-0 items-center justify-center gap-1 whitespace-nowrap rounded-lg bg-gray-100 px-3 text-xs font-semibold text-gray-700 transition hover:bg-gray-200 disabled:cursor-not-allowed disabled:opacity-50"
+                                        @disabled(! $selectedTypeId)
                                     >
                                         <x-heroicon-o-plus class="h-4 w-4" />
 
@@ -222,6 +232,7 @@
                                 @else
                                     <select
                                         id="selectedCategoryId"
+                                        wire:key="category-select-{{ $selectedTypeId }}"
                                         wire:model="selectedCategoryId"
                                         wire:change="clearInlineCategory"
                                         class="h-11 w-full rounded-lg border border-gray-200 bg-gray-50 px-3 text-sm text-gray-700 outline-none transition focus:ring-2 focus:ring-gray-300 @error('selectedCategoryId') border-red-400 bg-red-50 @enderror"

@@ -228,6 +228,10 @@ class CatalogoController extends Controller
         $types = CatalogType::query()
             ->where('empresa_id', $empresa->id)
             ->where('active', true)
+            ->where(function ($query) {
+                $query->where('business_model', '!=', CatalogType::BUSINESS_MODEL_PRODUCTS)
+                    ->orWhereHas('items', fn ($items) => $items->where('active', true));
+            })
             ->ordered()
             ->get(['name', 'slug']);
 

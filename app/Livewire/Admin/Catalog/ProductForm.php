@@ -5,7 +5,6 @@ namespace App\Livewire\Admin\Catalog;
 use App\Helpers\NotificationHelper;
 use App\Models\CatalogCategory;
 use App\Models\CatalogItem;
-use App\Models\CatalogItemVariant;
 use App\Models\CatalogType;
 use App\Models\Empresa;
 use App\Support\Permissions\CatalogPermission;
@@ -68,21 +67,36 @@ class ProductForm extends Component
             return;
         }
 
-        $type = $this->selectedTypeId > 0
-            ? CatalogType::query()->where('business_model', CatalogType::BUSINESS_MODEL_PRODUCTS)->find($this->selectedTypeId)
-            : null;
+        $types = $this->productTypes();
+        $type = $types->firstWhere('id', $this->selectedTypeId);
 
-        if (!$type) {
-            $type = CatalogType::query()
-                ->where('business_model', CatalogType::BUSINESS_MODEL_PRODUCTS)
-                ->ordered()
-                ->first();
+        // Con un solo negocio de productos no hay nada que elegir.
+        if (!$type && $types->count() === 1) {
+            $type = $types->first();
         }
 
         $this->selectedTypeId = (int) ($type?->id ?? 0);
         $this->returnUrl = $returnUrl ?: ($this->selectedTypeId > 0
             ? route('admin.catalog-types.show', $this->selectedTypeId)
             : route('admin.catalog.index'));
+    }
+
+    public function updatedSelectedTypeId($value): void
+    {
+        if ($this->catalogItemId) {
+            $this->selectedTypeId = (int) CatalogItem::query()->whereKey($this->catalogItemId)->value('catalog_type_id');
+            return;
+        }
+
+        $this->selectedTypeId = (int) $value;
+        $this->selectedCategoryId = null;
+        $this->newCategoryName = '';
+        $this->newCategoryDescription = '';
+        $this->resetErrorBag(['selectedTypeId', 'selectedCategoryId', 'newCategoryName']);
+
+        if ($this->fromInventory) {
+            $this->returnUrl = route('admin.inventario.index', array_filter(['catalog_type_id' => $this->selectedTypeId ?: null]));
+        }
     }
 
     public function save(): void
@@ -136,7 +150,6 @@ class ProductForm extends Component
         } else {
             $item = CatalogItem::create($payload);
             $this->catalogItemId = $item->id;
-            $this->ensureDefaultVariant($item);
             NotificationHelper::success('Producto guardado correctamente.');
         }
 
@@ -149,6 +162,11 @@ class ProductForm extends Component
 
     public function openCategoryModal(): void
     {
+        if (!$this->selectedTypeId) {
+            $this->addError('selectedTypeId', 'Selecciona un negocio antes de crear una categoria.');
+            return;
+        }
+
         $this->showCategoryModal = true;
     }
 
@@ -199,12 +217,21 @@ class ProductForm extends Component
     protected function rules(): array
     {
         return [
-            'selectedTypeId' => ['required', 'integer', 'exists:catalog_types,id'],
+            'selectedTypeId' => ['required', 'integer', 'min:1', 'exists:catalog_types,id'],
             'selectedCategoryId' => ['nullable', 'integer', 'exists:catalog_categories,id'],
             'name' => ['required', 'string', 'max:255'],
             'description' => ['nullable', 'string'],
             'active' => ['boolean'],
             'image' => ['nullable', 'image', 'mimes:jpg,jpeg,png,webp', 'max:6144'],
+        ];
+    }
+
+    protected function messages(): array
+    {
+        return [
+            'selectedTypeId.required' => 'Selecciona un negocio.',
+            'selectedTypeId.min' => 'Selecciona un negocio.',
+            'selectedTypeId.exists' => 'Selecciona un negocio valido.',
         ];
     }
 
@@ -327,20 +354,4 @@ class ProductForm extends Component
         return $value === '' ? null : $value;
     }
 
-    private function ensureDefaultVariant(CatalogItem $item): void
-    {
-        if ($item->variants()->exists()) {
-            return;
-        }
-
-        CatalogItemVariant::create([
-            'catalog_item_id' => $item->id,
-            'name' => 'General',
-            'price' => $item->base_price ?? 0,
-            'stock' => 0,
-            'min_stock' => 0,
-            'active' => true,
-            'is_default' => true,
-        ]);
-    }
 }

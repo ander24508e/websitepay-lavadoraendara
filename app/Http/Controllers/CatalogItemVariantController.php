@@ -91,7 +91,7 @@ class CatalogItemVariantController extends Controller
             'sku' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'profit_margin_percentage' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+            'profit_margin_percentage' => ['nullable', 'numeric', 'min:-100', 'max:10000'],
             'stock' => ['nullable', 'integer', 'min:0'],
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'active' => ['nullable', 'boolean'],
@@ -189,7 +189,7 @@ class CatalogItemVariantController extends Controller
             'sku' => ['nullable', 'string', 'max:255'],
             'price' => ['nullable', 'numeric', 'min:0'],
             'cost_price' => ['nullable', 'numeric', 'min:0'],
-            'profit_margin_percentage' => ['nullable', 'numeric', 'min:0', 'max:10000'],
+            'profit_margin_percentage' => ['nullable', 'numeric', 'min:-100', 'max:10000'],
             'stock' => ['nullable', 'integer', 'min:0'],
             'min_stock' => ['nullable', 'integer', 'min:0'],
             'active' => ['nullable', 'boolean'],
@@ -301,6 +301,10 @@ class CatalogItemVariantController extends Controller
 
     private function resolveSalePrice(mixed $cost, mixed $margin, mixed $fallback): ?float
     {
+        if ($fallback !== null && $fallback !== '') {
+            return round((float) $fallback, 2);
+        }
+
         $cost = is_numeric($cost) ? (float) $cost : 0;
         $margin = is_numeric($margin) ? (float) $margin : 0;
 
@@ -308,7 +312,7 @@ class CatalogItemVariantController extends Controller
             return round($cost + ($cost * $margin / 100), 2);
         }
 
-        return $fallback === null || $fallback === '' ? null : round((float) $fallback, 2);
+        return null;
     }
 
     private function resolveSku(?string $sku, CatalogItem $item, string $presentationName, ?int $ignoreVariantId = null): string

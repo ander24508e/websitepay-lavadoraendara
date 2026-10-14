@@ -4,7 +4,6 @@
     $computedMargin = $currentCost > 0 ? round((($currentPrice - $currentCost) / $currentCost) * 100, 2) : 40;
     $selectedMargin = (string) old('profit_margin_percentage', $computedMargin);
     $presetMargins = ['20', '30', '40', '50'];
-    $isCustomMargin = !in_array($selectedMargin, $presetMargins, true);
     $presentationPresets = ['Unidad', '250 ml', '500 ml', '800 ml', '1 litro', 'Galon', 'Caneca', 'Caja', 'Paquete'];
     $inputClass = 'w-full rounded-lg border border-gray-200 bg-gray-50 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-gray-300';
     $labelClass = 'mb-1 block text-xs font-semibold text-gray-700';
@@ -61,7 +60,7 @@
 
         <section class="rounded-lg border border-gray-100 bg-gray-50 p-4">
             <p class="text-xs font-semibold uppercase tracking-wide text-gray-400">Precios</p>
-            <p class="mb-3 text-xs text-gray-500">El precio de venta se calcula desde costo y ganancia.</p>
+            <p class="mb-3 text-xs text-gray-500">Calcula la ganancia desde el precio de venta o el precio de venta desde la ganancia.</p>
 
             <div class="grid gap-3 sm:grid-cols-2">
                 <div>
@@ -80,21 +79,27 @@
 
                 <div>
                     <label class="{{ $labelClass }}">Ganancia</label>
-                    <select id="presentation_margin_select"
-                        class="{{ $inputClass }} bg-white @error('profit_margin_percentage') border-red-400 bg-red-50 @enderror">
-                        @foreach ($presetMargins as $margin)
-                            <option value="{{ $margin }}" {{ !$isCustomMargin && $selectedMargin === $margin ? 'selected' : '' }}>
-                                {{ $margin }}%
-                            </option>
-                        @endforeach
-                        <option value="custom" {{ $isCustomMargin ? 'selected' : '' }}>Personalizado</option>
-                    </select>
-                    <div id="presentation_margin_custom_wrap" class="{{ $isCustomMargin ? '' : 'hidden' }} mt-2">
-                        <div class="relative">
-                            <input type="number" id="presentation_margin_custom"
-                                value="{{ $isCustomMargin ? $selectedMargin : '' }}" step="0.01" min="0"
-                                class="{{ $inputClass }} bg-white pr-8" placeholder="Ingresa porcentaje">
-                            <span class="absolute right-3 top-2.5 text-sm font-semibold text-gray-400">%</span>
+                    <div class="relative">
+                        <input type="text" id="presentation_margin_input"
+                            value="{{ $selectedMargin !== '' ? rtrim(rtrim(number_format((float) $selectedMargin, 2, '.', ''), '0'), '.') . '%' : '' }}"
+                            inputmode="decimal"
+                            class="{{ $inputClass }} bg-white pr-10 @error('profit_margin_percentage') border-red-400 bg-red-50 @enderror"
+                            placeholder="Ej: 40%">
+                        <button type="button" id="presentation_margin_toggle" aria-label="Mostrar porcentajes guardados"
+                            aria-expanded="false" aria-controls="presentation_margin_options"
+                            class="absolute inset-y-0 right-0 flex w-10 items-center justify-center text-gray-500 hover:text-gray-900">
+                            <svg class="h-4 w-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.22 7.47a.75.75 0 0 1 1.06 0L10 11.19l3.72-3.72a.75.75 0 1 1 1.06 1.06l-4.25 4.25a.75.75 0 0 1-1.06 0L5.22 8.53a.75.75 0 0 1 0-1.06Z" clip-rule="evenodd" />
+                            </svg>
+                        </button>
+                        <div id="presentation_margin_options" role="listbox" aria-label="Porcentajes guardados"
+                            class="absolute left-0 right-0 top-full z-20 mt-1 hidden overflow-hidden rounded-lg border border-gray-200 bg-white py-1 shadow-lg">
+                            @foreach ($presetMargins as $margin)
+                                <button type="button" role="option" data-margin-option="{{ $margin }}"
+                                    class="block w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-gray-100">
+                                    {{ $margin }}%
+                                </button>
+                            @endforeach
                         </div>
                     </div>
                     <input type="hidden" name="profit_margin_percentage" id="presentation_margin" value="{{ $selectedMargin }}">
@@ -109,8 +114,8 @@
                         <span class="absolute left-3 top-2.5 text-sm font-semibold text-gray-400">$</span>
                         <input type="number" name="price" id="presentation_sale_price"
                             value="{{ old('price', $catalogVariant?->price) }}" step="0.01" min="0"
-                            class="{{ $inputClass }} bg-white pl-8 text-gray-500 @error('price') border-red-400 bg-red-50 @enderror"
-                            placeholder="0.00" readonly>
+                            class="{{ $inputClass }} bg-white pl-8 @error('price') border-red-400 bg-red-50 @enderror"
+                            placeholder="0.00">
                     </div>
                     @error('price')
                         <p class="mt-1 text-xs text-red-500">{{ $message }}</p>
@@ -190,10 +195,10 @@
                 const skuInput = document.getElementById('presentation_sku');
                 const itemSelect = document.getElementById('presentation_item_id');
                 const costInput = document.getElementById('presentation_cost_price');
-                const marginSelect = document.getElementById('presentation_margin_select');
-                const marginCustomWrap = document.getElementById('presentation_margin_custom_wrap');
-                const marginCustomInput = document.getElementById('presentation_margin_custom');
+                const marginTextInput = document.getElementById('presentation_margin_input');
                 const marginInput = document.getElementById('presentation_margin');
+                const marginToggle = document.getElementById('presentation_margin_toggle');
+                const marginOptions = document.getElementById('presentation_margin_options');
                 const saleInput = document.getElementById('presentation_sale_price');
                 const nameInput = document.getElementById('presentation_name');
 
@@ -209,9 +214,41 @@
                     return `${prefix}-${ymd}-${token}`;
                 }
 
+                let lastEditedPriceField = saleInput?.value ? 'sale' : 'margin';
+
+                function formatDecimal(value) {
+                    if (!Number.isFinite(value)) return '';
+
+                    return value.toFixed(2);
+                }
+
+                function formatPercentage(value) {
+                    if (!Number.isFinite(value)) return '';
+
+                    return String(Number(value.toFixed(2)));
+                }
+
+                function normalizePercentage(value) {
+                    const normalized = String(value || '')
+                        .replace('%', '')
+                        .replace(',', '.')
+                        .trim();
+                    const parsed = parseFloat(normalized);
+
+                    return Number.isFinite(parsed) && parsed >= -100 ? parsed : 0;
+                }
+
+                function setMargin(margin) {
+                    if (!marginInput) return;
+
+                    const normalizedMargin = formatDecimal(Math.max(-100, margin));
+                    marginInput.value = normalizedMargin;
+                    if (marginTextInput) marginTextInput.value = `${formatPercentage(Math.max(-100, margin))}%`;
+                }
+
                 function calculatePrice() {
                     const cost = parseFloat(costInput?.value || '0');
-                    const margin = parseFloat(marginInput?.value || '0');
+                    const margin = normalizePercentage(marginInput?.value);
 
                     if (!saleInput) return;
 
@@ -223,18 +260,42 @@
                     }
                 }
 
-                function syncMargin() {
-                    if (!marginSelect || !marginInput) return;
+                function calculateMargin() {
+                    const cost = parseFloat(costInput?.value || '0');
+                    const sale = parseFloat(saleInput?.value || '0');
 
-                    if (marginSelect.value === 'custom') {
-                        marginCustomWrap?.classList.remove('hidden');
-                        marginInput.value = marginCustomInput?.value || 0;
-                    } else {
-                        marginCustomWrap?.classList.add('hidden');
-                        marginInput.value = marginSelect.value;
+                    if (cost <= 0 || !saleInput?.value) return;
+
+                    setMargin(((sale - cost) / cost) * 100);
+                }
+
+                function syncMargin(shouldCalculatePrice = true) {
+                    if (!marginTextInput || !marginInput) return;
+
+                    if (shouldCalculatePrice) {
+                        lastEditedPriceField = 'margin';
+                    }
+
+                    const margin = normalizePercentage(marginTextInput.value);
+                    marginInput.value = formatDecimal(margin);
+
+                    if (shouldCalculatePrice) {
+                        calculatePrice();
+                    }
+                }
+
+                function syncFromCost() {
+                    if (lastEditedPriceField === 'sale') {
+                        calculateMargin();
+                        return;
                     }
 
                     calculatePrice();
+                }
+
+                function closeMarginOptions() {
+                    marginOptions?.classList.add('hidden');
+                    marginToggle?.setAttribute('aria-expanded', 'false');
                 }
 
                 if (skuInput && !skuInput.value) {
@@ -252,11 +313,45 @@
                     });
                 });
 
-                costInput?.addEventListener('input', calculatePrice);
-                marginSelect?.addEventListener('change', syncMargin);
-                marginCustomInput?.addEventListener('input', syncMargin);
-                syncMargin();
-                calculatePrice();
+                costInput?.addEventListener('input', syncFromCost);
+                marginTextInput?.addEventListener('input', () => syncMargin());
+                marginTextInput?.addEventListener('change', () => {
+                    syncMargin();
+                    if (marginTextInput.value && !marginTextInput.value.includes('%')) {
+                        marginTextInput.value = `${formatPercentage(normalizePercentage(marginTextInput.value))}%`;
+                    }
+                });
+                marginToggle?.addEventListener('click', () => {
+                    const isOpen = !marginOptions?.classList.contains('hidden');
+                    if (isOpen) {
+                        closeMarginOptions();
+                        return;
+                    }
+
+                    marginOptions?.classList.remove('hidden');
+                    marginToggle.setAttribute('aria-expanded', 'true');
+                });
+                marginOptions?.querySelectorAll('[data-margin-option]').forEach((option) => {
+                    option.addEventListener('click', () => {
+                        if (marginTextInput) marginTextInput.value = `${option.dataset.marginOption}%`;
+                        syncMargin();
+                        closeMarginOptions();
+                        marginTextInput?.focus();
+                    });
+                });
+                document.addEventListener('click', (event) => {
+                    if (!marginOptions?.parentElement?.contains(event.target)) closeMarginOptions();
+                });
+                saleInput?.addEventListener('input', () => {
+                    lastEditedPriceField = 'sale';
+                    calculateMargin();
+                });
+                syncMargin(false);
+                if (lastEditedPriceField === 'sale') {
+                    calculateMargin();
+                } else {
+                    calculatePrice();
+                }
             });
         </script>
     @endpush

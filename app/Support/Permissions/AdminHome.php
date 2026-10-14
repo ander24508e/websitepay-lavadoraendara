@@ -65,7 +65,6 @@ class AdminHome
             'admin.inventario.returns',
             'admin.inventario.counts',
             'admin.inventario.locations',
-            'admin.inventario.suppliers',
             'admin.inventario.reports',
             'admin.inventario.periods',
         ]);

@@ -46,13 +46,9 @@ class CatalogItemController extends Controller
         }
 
         if ($fromInventory && (!$selectedType || !$this->isProductBusiness($selectedType))) {
-            $selectedType = CatalogType::query()
-                ->where('empresa_id', $empresa->id)
-                ->where('business_model', CatalogType::BUSINESS_MODEL_PRODUCTS)
-                ->ordered()
-                ->first();
-
-            $selectedTypeId = (int) ($selectedType?->id ?? 0);
+            // Sin negocio valido el usuario lo elige en el formulario.
+            $selectedType = null;
+            $selectedTypeId = 0;
             $selectedCategoryId = 0;
             $selectedCategory = null;
         }
@@ -496,23 +492,6 @@ class CatalogItemController extends Controller
             'reservable' => $request->boolean('reservable'),
             'uses_inventory' => false,
         ];
-    }
-
-    private function ensureDefaultVariant(CatalogItem $item): void
-    {
-        if ($item->variants()->exists()) {
-            return;
-        }
-
-        CatalogItemVariant::create([
-            'catalog_item_id' => $item->id,
-            'name' => 'General',
-            'price' => $item->base_price,
-            'stock' => 0,
-            'min_stock' => 0,
-            'active' => true,
-            'is_default' => true,
-        ]);
     }
 
     private function createInlineCategory(int $empresaId, int $typeId, string $name, ?string $description = null): CatalogCategory
