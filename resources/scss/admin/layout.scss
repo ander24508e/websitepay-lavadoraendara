@@ -238,14 +238,6 @@
             display: none;
         }
 
-        .sidebar-toggle-label {
-            display: flex;
-            flex: 1;
-            align-items: center;
-            justify-content: space-between;
-            gap: 0.5rem;
-        }
-
         /* Desplegable de seccion con <details> (ej. Inventario en el sidebar) */
         .sidebar-flyout-summary {
             list-style: none;
@@ -259,11 +251,6 @@
 
         .sidebar-flyout-summary::marker {
             content: '';
-        }
-
-        .sidebar-flyout[open] > .sidebar-flyout-summary .sidebar-toggle-chevron,
-        [data-nav-toggle][aria-expanded="true"] .sidebar-toggle-chevron {
-            transform: rotate(180deg);
         }
 
         .sidebar-nav .sidebar-subnav a {

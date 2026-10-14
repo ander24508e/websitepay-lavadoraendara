@@ -34,10 +34,7 @@
     <details class="sidebar-flyout">
         <summary class="sidebar-flyout-summary {{ $inventorySectionOpen ? 'active' : '' }}" title="Inventario">
             <span><x-heroicon-o-archive-box class="w-5 h-5" /></span>
-            <span class="sidebar-toggle-label">
-                Inventario
-                <x-heroicon-o-chevron-down class="sidebar-toggle-chevron w-4 h-4" />
-            </span>
+            <span>Inventario</span>
         </summary>
         <div class="sidebar-subnav sidebar-flyout-panel">
             @include('partials.admin-inventory-nav-links', ['items' => $inventorySubItems])
@@ -47,10 +44,7 @@
     <a href="{{ route($inventoryRoute) }}" class="{{ $inventorySectionOpen ? 'active' : '' }}" data-nav-toggle
         aria-expanded="{{ $inventorySectionOpen ? 'true' : 'false' }}">
         <span><x-heroicon-o-archive-box class="w-5 h-5" /></span>
-        <span class="sidebar-toggle-label">
-            Inventario
-            <x-heroicon-o-chevron-down class="sidebar-toggle-chevron w-4 h-4" />
-        </span>
+        <span>Inventario</span>
     </a>
 
     <div class="sidebar-subnav" @unless ($inventorySectionOpen) hidden @endunless>
